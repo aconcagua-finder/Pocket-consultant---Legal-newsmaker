@@ -120,8 +120,8 @@ The image should be immediately understandable and shareable, capturing the esse
             response = self.client.images.generate(
                 model="gpt-image-1",
                 prompt=prompt,
-                size="1024x1024",
-                quality="medium",  # Для gpt-image-1: low, medium, high, auto
+                size="1536x1024",
+                quality="low",  # Для gpt-image-1: low, medium, high, auto
                 n=1
             )
             
