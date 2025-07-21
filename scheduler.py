@@ -7,11 +7,12 @@ from loguru import logger
 from perplexity_client import PerplexityClient
 from telegram_client import TelegramClient
 from openai_client import OpenAIClient
+from news_scheduler import NewsmakerScheduler as NewNewsmakerScheduler
 import config
 
 
-class NewsmakerScheduler:
-    """Планировщик для автоматического получения и отправки законодательных новостей"""
+class LegacyNewsmakerScheduler:
+    """LEGACY: Старый планировщик для автоматического получения и отправки законодательных новостей"""
     
     def __init__(self):
         self.perplexity_client = PerplexityClient()
@@ -267,4 +268,54 @@ class NewsmakerScheduler:
         """Останавливает планировщик"""
         self.is_running = False
         schedule.clear()
-        logger.info("⏹️ Планировщик остановлен") 
+        logger.info("⏹️ Планировщик остановлен")
+
+
+# =============================================================================
+# НОВАЯ АРХИТЕКТУРА - Wrapper для совместимости
+# =============================================================================
+
+class NewsmakerSchedulerWrapper:
+    """
+    Wrapper для новой архитектуры планировщика
+    Обеспечивает совместимость с существующим интерфейсом
+    """
+    
+    def __init__(self, use_new_architecture: bool = True):
+        self.use_new_architecture = use_new_architecture
+        
+        if use_new_architecture:
+            logger.info("🆕 Используется новая архитектура планировщика")
+            self.scheduler = NewNewsmakerScheduler()
+        else:
+            logger.info("🔄 Используется legacy архитектура планировщика")
+            self.scheduler = LegacyNewsmakerScheduler()
+    
+    def test_components(self) -> bool:
+        """Тестирует компоненты системы"""
+        return self.scheduler.test_components()
+    
+    def start_scheduler(self):
+        """Запускает планировщик"""
+        if self.use_new_architecture:
+            logger.info("🚀 Запуск новой системы сбора и публикации")
+            logger.info("📋 Режим: сбор утром + публикации по расписанию")
+        
+        self.scheduler.start_scheduler()
+    
+    def run_once_now(self):
+        """Запускает задачу один раз"""
+        if self.use_new_architecture:
+            logger.info("🛠️ Ручной запуск новой системы")
+            # В новой архитектуре можем выбрать что запускать
+            self.scheduler.run_manual_publication()
+        else:
+            self.scheduler.run_once_now()
+    
+    def stop_scheduler(self):
+        """Останавливает планировщик"""
+        self.scheduler.stop_scheduler()
+
+
+# Для обратной совместимости экспортируем wrapper как основной класс
+NewsmakerScheduler = NewsmakerSchedulerWrapper 

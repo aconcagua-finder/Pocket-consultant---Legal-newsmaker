@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(apt-get:*)",
+      "Bash(cat:*)",
+      "Bash(sudo:*)",
+      "Bash(export:*)",
+      "Bash(pip --version)",
+      "Bash(grep:*)",
+      "WebFetch(domain:docs.perplexity.ai)",
+      "WebFetch(domain:openrouter.ai)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

@@ -2,8 +2,11 @@ import asyncio
 import io
 import re
 import random
-from datetime import datetime
-from typing import Optional
+import json
+import hashlib
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict
+from pathlib import Path
 from loguru import logger
 import telegram
 from telegram import Bot
@@ -21,6 +24,14 @@ class TelegramClient:
         self.bot_token = config.TELEGRAM_BOT_TOKEN
         self.channel_id = config.TELEGRAM_CHANNEL_ID
         self.bot = None
+        
+        # Файл для хранения истории сообщений
+        self.history_file = Path("logs/message_history.json")
+        self.max_history_items = 15  # Храним последние 15 сообщений
+        self.max_history_days = 7  # Удаляем сообщения старше 7 дней
+        
+        # Создаем папку logs если её нет
+        self.history_file.parent.mkdir(exist_ok=True)
         
         if not self.bot_token:
             logger.warning("TELEGRAM_BOT_TOKEN не установлен в переменных окружения")
@@ -40,9 +51,108 @@ class TelegramClient:
             )
             self.bot = Bot(token=self.bot_token, request=request)
     
+    def _get_content_hash(self, content: str) -> str:
+        """
+        Создает хеш очищенного контента для сравнения
+        
+        Args:
+            content: Исходный контент
+            
+        Returns:
+            str: SHA-256 хеш очищенного контента
+        """
+        cleaned = self._clean_content_for_comparison(content)
+        return hashlib.sha256(cleaned.encode('utf-8')).hexdigest()
+    
+    def _load_message_history(self) -> List[Dict]:
+        """
+        Загружает историю сообщений из файла
+        
+        Returns:
+            List[Dict]: Список сообщений с хешами и временными метками
+        """
+        try:
+            if self.history_file.exists():
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    history = json.load(f)
+                    logger.debug(f"Загружена история из {len(history)} сообщений")
+                    return history
+            return []
+        except Exception as e:
+            logger.error(f"Ошибка при загрузке истории сообщений: {e}")
+            return []
+    
+    def _save_message_to_history(self, content: str) -> None:
+        """
+        Сохраняет новое сообщение в историю
+        
+        Args:
+            content: Контент сообщения для сохранения
+        """
+        try:
+            # Загружаем существующую историю
+            history = self._load_message_history()
+            
+            # Создаем запись о новом сообщении
+            message_record = {
+                'hash': self._get_content_hash(content),
+                'timestamp': datetime.now().isoformat(),
+                'preview': self._clean_content_for_comparison(content)[:100]  # Первые 100 символов для отладки
+            }
+            
+            # Добавляем в начало списка (новые сообщения первыми)
+            history.insert(0, message_record)
+            
+            # Очищаем старые записи
+            history = self._cleanup_history(history)
+            
+            # Сохраняем обновленную историю
+            with open(self.history_file, 'w', encoding='utf-8') as f:
+                json.dump(history, f, ensure_ascii=False, indent=2)
+                
+            logger.debug(f"Сообщение сохранено в историю. Всего записей: {len(history)}")
+            
+        except Exception as e:
+            logger.error(f"Ошибка при сохранении сообщения в историю: {e}")
+    
+    def _cleanup_history(self, history: List[Dict]) -> List[Dict]:
+        """
+        Очищает историю от старых сообщений
+        
+        Args:
+            history: Текущая история сообщений
+            
+        Returns:
+            List[Dict]: Очищенная история
+        """
+        try:
+            # Удаляем записи старше max_history_days дней
+            cutoff_date = datetime.now() - timedelta(days=self.max_history_days)
+            
+            filtered_history = []
+            for record in history:
+                try:
+                    record_date = datetime.fromisoformat(record['timestamp'])
+                    if record_date > cutoff_date:
+                        filtered_history.append(record)
+                except (ValueError, KeyError):
+                    # Пропускаем некорректные записи
+                    continue
+            
+            # Ограничиваем количество записей
+            if len(filtered_history) > self.max_history_items:
+                filtered_history = filtered_history[:self.max_history_items]
+                
+            logger.debug(f"История очищена: было {len(history)}, стало {len(filtered_history)}")
+            return filtered_history
+            
+        except Exception as e:
+            logger.error(f"Ошибка при очистке истории: {e}")
+            return history[:self.max_history_items]  # Fallback: просто ограничиваем количество
+
     async def _check_for_duplicates(self, new_content: str, similarity_threshold: float = 0.7) -> bool:
         """
-        Проверяет последние 3 сообщения канала на дублирование контента
+        Проверяет историю сообщений на дублирование контента
         
         Args:
             new_content: Новый контент для проверки
@@ -52,14 +162,56 @@ class TelegramClient:
             bool: True если найден дублированный контент
         """
         try:
-            # Временно отключаем проверку дубликатов из-за конфликта с webhook
-            # В будущем можно реализовать через базу данных или файловое хранение
-            logger.info("Проверка дубликатов временно отключена (webhook конфликт)")
+            # Получаем хеш нового контента
+            new_hash = self._get_content_hash(new_content)
+            new_cleaned = self._clean_content_for_comparison(new_content)
+            
+            # Загружаем историю сообщений
+            history = self._load_message_history()
+            
+            if not history:
+                logger.debug("История сообщений пуста - дубликатов нет")
+                return False
+            
+            logger.info(f"Проверяю на дубликаты среди {len(history)} сохраненных сообщений")
+            
+            # Проверяем точное совпадение по хешу
+            for record in history:
+                if record.get('hash') == new_hash:
+                    logger.warning(f"Найден точный дубликат по хешу: {record.get('preview', '')[:50]}...")
+                    return True
+            
+            # Проверяем схожесть текста с помощью SequenceMatcher
+            for record in history:
+                try:
+                    # Восстанавливаем очищенный текст из preview (для совместимости)
+                    # В реальности лучше хранить полный очищенный текст отдельно
+                    old_preview = record.get('preview', '')
+                    
+                    # Если preview слишком короткий, пропускаем детальную проверку
+                    if len(old_preview) < 50 or len(new_cleaned) < 50:
+                        continue
+                    
+                    # Вычисляем схожесть
+                    similarity = SequenceMatcher(None, new_cleaned, old_preview).ratio()
+                    
+                    if similarity >= similarity_threshold:
+                        timestamp = record.get('timestamp', 'неизвестно')
+                        logger.warning(f"Найден похожий контент (схожесть: {similarity:.2%}, порог: {similarity_threshold:.2%})")
+                        logger.warning(f"Дата предыдущего сообщения: {timestamp}")
+                        logger.warning(f"Превью: {old_preview[:100]}...")
+                        return True
+                        
+                except Exception as e:
+                    logger.error(f"Ошибка при сравнении с записью в истории: {e}")
+                    continue
+            
+            logger.info("Дубликатов не найдено")
             return False
             
         except Exception as e:
             logger.error(f"Ошибка при проверке дубликатов: {e}")
-            # В случае ошибки разрешаем публикацию
+            # В случае ошибки разрешаем публикацию (безопасный fallback)
             return False
     
     def _clean_content_for_comparison(self, content: str) -> str:
@@ -135,18 +287,8 @@ class TelegramClient:
         content = data.get('content', '')
         sources = data.get('sources', [])
 
-        # Заменяем ссылки на кликабельные
-        if sources:
-            logger.debug(f"Конвертирую {len(sources)} источников в HTML ссылки")
-            for i, source in enumerate(sources, 1):
-                pattern = f"\\[{i}\\]"
-                link = f'<a href="{source}">[{i}]</a>'
-                # Подсчитываем количество замен
-                content, count = re.subn(pattern, link, content)
-                if count > 0:
-                    logger.debug(f"Заменено {count} вхождений [{i}] на HTML ссылку: {source}")
-                else:
-                    logger.warning(f"Не найдено вхождений [{i}] в тексте для источника: {source}")
+        # Удаляем все маркеры ссылок из текста (если они остались)
+        content = re.sub(r'\s*\[\d+\]', '', content)
 
         # Если текст пришел без переносов строк (все в одной строке),
         # то нужно восстановить структуру
@@ -163,9 +305,6 @@ class TelegramClient:
             # Ищем точку + пробел + заглавная буква, но не внутри скобок и кавычек
             content = re.sub(r'(\.) ([А-ЯЁ])', r'\1\n\n\2', content)
             
-            # Добавляем абзац после ссылок вида [цифра] если после них идет текст
-            content = re.sub(r'(\[\d+\])(\s*)([А-ЯЁ])', r'\1\n\n\3', content)
-            
             # Убираем лишние пробелы в начале строк
             content = '\n'.join(line.strip() for line in content.split('\n'))
 
@@ -173,13 +312,18 @@ class TelegramClient:
         lines = content.split('\n')
         formatted_lines = []
         
-        for line in lines:
+        for i, line in enumerate(lines):
             # Сохраняем пустые строки для абзацев
             if not line.strip():
                 formatted_lines.append('')
-            # Делаем жирными только строки с эмодзи-маркерами
+            # Обрабатываем заголовок и добавляем ссылку на источник
             elif line.strip().startswith('📜'):
-                formatted_lines.append(f"<b>{line.strip()}</b>")
+                # Добавляем ссылку [источник] в конец заголовка
+                if sources:
+                    formatted_line = f"<b>{line.strip()}</b> <a href=\"{sources[0]}\">[источник]</a>"
+                else:
+                    formatted_line = f"<b>{line.strip()}</b>"
+                formatted_lines.append(formatted_line)
             # Для строк с 💬 делаем жирным только заголовок до двоеточия
             elif line.strip().startswith('💬'):
                 if ':' in line:
@@ -307,6 +451,10 @@ class TelegramClient:
                     return False
             
             logger.info("Все части сообщения отправлены успешно")
+            
+            # Сохраняем сообщение в историю после успешной отправки
+            self._save_message_to_history(formatted_message)
+            
             return True
             
         except Exception as e:
@@ -404,6 +552,10 @@ class TelegramClient:
                 logger.info(f"Сообщение с комиксом отправлено: фото + {len(message_parts)} текстовых частей")
             
             logger.info("Сообщение с комиксом отправлено успешно")
+            
+            # Сохраняем сообщение в историю после успешной отправки
+            self._save_message_to_history(formatted_message)
+            
             return True
             
         except TelegramError as e:

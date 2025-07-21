@@ -6,10 +6,16 @@ from typing import Optional, Tuple, List
 from loguru import logger
 
 import config
+from prompts import (
+    get_perplexity_system_prompt,
+    get_perplexity_news_prompt,
+    PromptConfig
+)
+from date_validator import is_content_fresh, get_date_feedback_for_next_prompt
 
 
 class PerplexityClient:
-    """Клиент для работы с Perplexity API (модель Sonar-pro)"""
+    """Клиент для работы с Perplexity API (модель Sonar Deep Research)"""
     
     def __init__(self):
         self.api_key = config.PERPLEXITY_API_KEY
@@ -21,60 +27,29 @@ class PerplexityClient:
             "Content-Type": "application/json"
         }
     
-    def _get_yesterday_date(self) -> str:
-        """Получает вчерашнюю дату в формате 'день месяц'"""
-        yesterday = datetime.now() - timedelta(days=1)
-        months = {
-            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-            5: "мая", 6: "июня", 7: "июля", 8: "августа", 
-            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
-        }
+    def _clean_deep_research_content(self, content: str) -> str:
+        """
+        Очищает контент от тегов рассуждений Deep Research
         
-        day = yesterday.day
-        month = months[yesterday.month]
-        return f"{day} {month}"
+        Args:
+            content: Сырой контент от Deep Research API
+            
+        Returns:
+            str: Очищенный контент без тегов <think> и </think>
+        """
+        # Удаляем блоки рассуждений <think>...</think>
+        cleaned = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+        
+        # Удаляем оставшиеся одиночные теги
+        cleaned = re.sub(r'</?think>', '', cleaned)
+        
+        # Убираем лишние переносы строк
+        cleaned = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned)
+        
+        # Убираем пробелы в начале и конце
+        return cleaned.strip()
     
-    def _create_prompt(self) -> str:
-        """Создает промпт для запроса информации о законодательных изменениях"""
-        yesterday_date = self._get_yesterday_date()
-        
-        prompt = f"""Найди ОДНО главное изменение в российском законодательстве за {yesterday_date}.
-
-ТРЕБОВАНИЯ:
-- Изучи источники и найди КОНКРЕТНЫЕ цифры: суммы, проценты, сроки
-- НЕ пиши общие фразы без конкретики
-- Комментарий должен быть КРАТКИМ (максимум 100-120 слов)
-- Стиль: юридический с легкой иронией, БЕЗ публицистических заголовков
-
-КРИТИЧЕСКИ ВАЖНО ПРО ССЫЛКИ:
-- ОБЯЗАТЕЛЬНО ставь [1] после КАЖДОГО факта в тексте
-- В заголовке документа ОБЯЗАТЕЛЬНО должен быть [1]
-- В первом предложении комментария ОБЯЗАТЕЛЬНО должен быть [1]
-- Если упоминаешь факт из источника - ставь [1] или [2] сразу после факта
-- Пример: "С 1 июня штраф составит 5000 рублей [1]"
-
-Формат ответа:
-
-📜 Федеральный закон №123-ФЗ [1] - штрафы увеличены вдвое
-
-💬 КОММЕНТАРИЙ КАРМАННОГО КОНСУЛЬТАНТА:
-
-С 1 июня вступает в силу закон об увеличении штрафов до 5000 рублей [1]. 
-
-Затронет всех автомобилистов - придется платить в два раза больше [1].
-
-Видимо, бюджету нужны деньги, а граждане - традиционный источник пополнения казны 💰
-
-ИСТОЧНИКИ:
-🔗 Источник: https://sozd.duma.gov.ru/bill/123456-8
-🔗 Источник: https://pravo.gov.ru/proxy/ips/?docbody=123456
-
-ВАЖНО: 
-- Пиши как юрист-практик, а НЕ журналист
-- Максимум 3 коротких абзаца
-- БЕЗ ССЫЛОК [1] ОТВЕТ НЕ ПРИНИМАЕТСЯ!"""
-
-        return prompt
+    
     
     def _extract_sources_from_content(self, content: str) -> Tuple[str, List[str]]:
         """
@@ -156,6 +131,19 @@ class PerplexityClient:
                     
                 logger.warning("Источники не найдены в ответе, добавлены стандартные ссылки")
         
+        # Если вообще никаких источников не найдено, добавляем дефолтный
+        if not sources:
+            # Пытаемся найти номер закона в тексте
+            law_match = re.search(r'№\s*(\d+-ФЗ)', main_content)
+            if law_match:
+                law_number = law_match.group(1)
+                sources.append(f'https://sozd.duma.gov.ru/bill/{law_number}')
+            else:
+                # Дефолтный источник на сайт законопроектов
+                sources.append('https://sozd.duma.gov.ru/')
+            
+            logger.warning("Источники не найдены, использую дефолтный источник")
+        
         logger.debug(f"Извлечено {len(sources)} источников")
         if sources:
             for i, source in enumerate(sources, 1):
@@ -171,26 +159,27 @@ class PerplexityClient:
             dict: {'content': str, 'sources': List[str]} или None в случае ошибки
         """
         try:
-            prompt = self._create_prompt()
-            yesterday_date = self._get_yesterday_date()
+            prompt = get_perplexity_news_prompt()
+            from prompts import get_yesterday_date
+            yesterday_date = get_yesterday_date()
             
             logger.info(f"Запрашиваю информацию о законодательных изменениях за {yesterday_date}")
             
             payload = {
-                "model": "sonar-pro",
+                "model": "sonar-deep-research",
                 "messages": [
                     {
                         "role": "system",
-                        "content": "Ты опытный юрист-практик. Отвечай кратко, по существу, с конкретными фактами и цифрами."
+                        "content": get_perplexity_system_prompt()
                     },
                     {
                         "role": "user", 
                         "content": prompt
                     }
                 ],
-                "max_tokens": 600,
-                "temperature": 0.2,
-                "top_p": 0.9
+                "max_tokens": PromptConfig.PERPLEXITY_MAX_TOKENS,
+                "temperature": PromptConfig.PERPLEXITY_TEMPERATURE,
+                "top_p": PromptConfig.PERPLEXITY_TOP_P
             }
             
             response = requests.post(
@@ -208,58 +197,23 @@ class PerplexityClient:
             logger.info("Успешно получен ответ от Perplexity API")
             logger.info(f"Полный ответ от AI:\n{raw_content}\n---")
             
-            # Проверяем наличие маркеров ссылок
-            link_markers = re.findall(r'\[\d+\]', raw_content)
-            if link_markers:
-                logger.debug(f"Найдены маркеры ссылок в тексте: {link_markers}")
-            else:
-                logger.warning("В тексте не найдены маркеры ссылок [1], [2] и т.д.")
+            # Очищаем от тегов рассуждений Deep Research
+            cleaned_content = self._clean_deep_research_content(raw_content)
             
             # Извлекаем источники
-            content, sources = self._extract_sources_from_content(raw_content)
+            content, sources = self._extract_sources_from_content(cleaned_content)
             
-            # Заменяем любые номера ссылок на [1], [2] и т.д. по порядку
-            # Находим все уникальные номера ссылок в тексте
-            all_ref_numbers = sorted(set(int(m.group(1)) for m in re.finditer(r'\[(\d+)\]', content)))
+            # Удаляем любые оставшиеся маркеры ссылок из текста
+            content = re.sub(r'\s*\[\d+\]', '', content)
             
-            if all_ref_numbers:
-                logger.info(f"Найдены ссылки с номерами: {all_ref_numbers}")
-                # Создаем маппинг старых номеров на новые
-                ref_mapping = {old_num: new_num for new_num, old_num in enumerate(all_ref_numbers, 1)}
-                
-                # Заменяем все ссылки
-                for old_num, new_num in ref_mapping.items():
-                    old_ref = f'[{old_num}]'
-                    new_ref = f'[{new_num}]'
-                    content = content.replace(old_ref, new_ref)
-                    logger.debug(f"Заменено {old_ref} на {new_ref}")
+            # Проверяем актуальность новости
+            is_fresh, freshness_reason = is_content_fresh(content, max_age_days=3)
+            logger.info(f"Проверка актуальности: {freshness_reason}")
             
-            # Проверяем наличие маркеров после замены
-            link_markers = re.findall(r'\[\d+\]', content)
-            if not link_markers and sources:
-                logger.warning("Добавляю недостающие маркеры ссылок...")
-                lines = content.split('\n')
-                modified_lines = []
-                
-                for i, line in enumerate(lines):
-                    if line.strip():
-                        # Добавляем [1] к заголовку документа
-                        if line.strip().startswith('📜') and '[1]' not in line:
-                            line = line.rstrip() + ' [1]'
-                            logger.debug(f"Добавлен [1] к заголовку: {line}")
-                        # Добавляем [1] к первому предложению комментария
-                        elif i > 0 and lines[i-1].strip().startswith('💬') and '[1]' not in line:
-                            # Добавляем [1] в конец первого предложения
-                            if '. ' in line:
-                                first_sentence_end = line.find('. ')
-                                line = line[:first_sentence_end] + ' [1]' + line[first_sentence_end:]
-                            else:
-                                line = line.rstrip() + ' [1]'
-                            logger.debug(f"Добавлен [1] к первому предложению: {line}")
-                    
-                    modified_lines.append(line)
-                
-                content = '\n'.join(modified_lines)
+            if not is_fresh:
+                logger.warning("⚠️ Полученная новость устарела, попробуем еще раз с более строгими критериями")
+                # Можно добавить повторный запрос с улучшенным промптом
+                # Пока возвращаем как есть, но с предупреждением
             
             return {
                 'content': content,
@@ -287,7 +241,7 @@ class PerplexityClient:
         """
         try:
             test_payload = {
-                "model": "sonar-pro",
+                "model": "sonar-deep-research",
                 "messages": [
                     {
                         "role": "user",

@@ -5,11 +5,19 @@ OpenAI клиент для генерации комиксов к юридиче
 
 import io
 import base64
+import random
 from typing import Optional
 from loguru import logger
 from openai import OpenAI
 
 import config
+from prompts import (
+    get_openai_comic_styles,
+    get_openai_comic_prompt,
+    get_openai_test_prompt,
+    get_comic_context_from_news,
+    PromptConfig
+)
 
 
 class OpenAIClient:
@@ -34,69 +42,15 @@ class OpenAIClient:
         Returns:
             str: Промпт для модели генерации изображений OpenAI
         """
-        # Извлекаем  факты из новостей для более точного комикса
-        key_points = []
-        lines = news_content.split('\n')
-        for line in lines:
-            if '📜' in line:
-                # Извлекаем название документа
-                key_points.append(f"Legal document: {line.replace('📜', '').strip()}")
-            elif any(keyword in line.lower() for keyword in ['штраф', 'налог', 'закон', 'запрет', 'льгота', 'пособие']):
-                # Важные юридические термины
-                key_points.append(line.strip())
-        
-        context = ' '.join(key_points[:3])  # Берем первые 3 ключевых момента
+        # Извлекаем контекст из новостей
+        context = get_comic_context_from_news(news_content)
         
         # Выбираем случайный стиль для вариативности
-        import random
-        styles = [
-            "photorealistic digital art, dramatic lighting, meme-worthy composition",
-            "modern illustration style, flat design with depth, vibrant colors",
-            "editorial cartoon style, satirical but respectful, clean lines",
-            "realistic 3D render, Pixar-like quality, expressive characters",
-            "minimalist vector art, bold colors, simple but impactful"
-        ]
+        styles = get_openai_comic_styles()
         chosen_style = random.choice(styles)
         
-        prompt = f"""
-Create a witty single-panel illustration about Russian legal news:
-
-TOPIC: {context}
-
-STYLE: {chosen_style}
-
-SCENE REQUIREMENTS:
-- 1-2 modern Russian characters in everyday situations
-- Contemporary setting (office, street, home, cafe)
-- One speech bubble with short, witty Russian text
-- Clear visual metaphor for the legal change
-- Relatable, everyday scenario
-
-CHARACTER REACTIONS (choose one):
-😅 Confused but amused
-🤔 Deeply contemplating
-😱 Mildly shocked
-🙄 Sarcastically accepting
-💭 Lost in thought
-
-SPEECH BUBBLE IDEAS (adapt to topic):
-"Так, что там опять придумали?"
-"Ну вот, теперь и это..."
-"А можно проще было?"
-"Интересненько..."
-"Это точно поможет?"
-
-VISUAL APPROACH:
-- Clean, modern composition
-- Good contrast and readability
-- Subtle humor without being offensive
-- Professional but approachable
-- Focus on human reactions and emotions
-
-The image should be immediately understandable and shareable, capturing the essence of how regular people react to legal changes.
-"""
-        
-        return prompt.strip()
+        # Создаем промпт
+        return get_openai_comic_prompt(context, chosen_style)
     
     def generate_comic_image(self, news_content: str) -> Optional[bytes]:
         """
@@ -120,9 +74,9 @@ The image should be immediately understandable and shareable, capturing the esse
             response = self.client.images.generate(
                 model="gpt-image-1",
                 prompt=prompt,
-                size="1536x1024",
-                quality="low",  # Для gpt-image-1: low, medium, high, auto
-                n=1
+                size=PromptConfig.OPENAI_IMAGE_SIZE,
+                quality=PromptConfig.OPENAI_IMAGE_QUALITY,
+                n=PromptConfig.OPENAI_IMAGE_COUNT
             )
             
             # Проверяем, есть ли URL или base64
@@ -161,10 +115,10 @@ The image should be immediately understandable and shareable, capturing the esse
             # Пробуем сгенерировать простое изображение
             response = self.client.images.generate(
                 model="gpt-image-1",
-                prompt="Simple test image: a small blue circle on white background",
-                size="1024x1024",
-                quality="low",
-                n=1
+                prompt=get_openai_test_prompt(),
+                size=PromptConfig.OPENAI_IMAGE_SIZE,
+                quality=PromptConfig.OPENAI_IMAGE_QUALITY,
+                n=PromptConfig.OPENAI_IMAGE_COUNT
             )
             
             if response.data and len(response.data) > 0:
