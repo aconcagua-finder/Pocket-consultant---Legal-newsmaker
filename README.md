@@ -55,8 +55,8 @@ nano config.py  # или используйте любой текстовый р
 Создайте файл `.env` со следующим содержимым:
 
 ```env
-TELEGRAM_BOT_TOKEN=ваш_токен_бота
-TELEGRAM_CHANNEL_ID=@ваш_канал_или_-1001234567890
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHANNEL_ID=@your_channel_or_chat_id
 ```
 
 ### 5. Тестирование
@@ -148,9 +148,9 @@ pip install -r requirements.txt
 
 ### 2. Настройка Telegram бота
 1. Создайте бота через [@BotFather](https://t.me/BotFather)
-2. Получите токен бота (например: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+2. Получите токен бота (например: `110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw`)
 3. Добавьте бота в ваш канал как администратора
-4. Получите ID канала (например: `-1001234567890`)
+4. Получите ID канала (например: `@your_channel` или `-100123456789`)
 
 ### 3. Настройка конфигурации
 ```bash
@@ -163,8 +163,10 @@ nano .env
 
 Заполните `.env`:
 ```env
-TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
-TELEGRAM_CHANNEL_ID=-1001234567890
+PERPLEXITY_API_KEY=your_perplexity_key_here
+OPENAI_API_KEY=your_openai_key_here
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHANNEL_ID=your_channel_id_here
 ```
 
 ### 4. Тестирование системы
@@ -203,6 +205,8 @@ python main.py --start
 - `LOG_LEVEL = "INFO"` - уровень логирования
 
 ### Переменные окружения в `.env`:
+- `PERPLEXITY_API_KEY` - API ключ Perplexity
+- `OPENAI_API_KEY` - API ключ OpenAI
 - `TELEGRAM_BOT_TOKEN` - токен Telegram бота
 - `TELEGRAM_CHANNEL_ID` - ID канала для публикации
 
