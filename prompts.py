@@ -398,9 +398,9 @@ class PromptConfig:
     PERPLEXITY_TEMPERATURE = 0.2
     PERPLEXITY_TOP_P = 0.9
     
-    # OpenAI настройки
-    OPENAI_IMAGE_SIZE = "1536x1024"
-    OPENAI_IMAGE_QUALITY = "medium"  # low, medium, high, auto
+    # OpenAI настройки (для GPT-Image-1 от апреля 2025)
+    OPENAI_IMAGE_SIZE = "1536x1024"  # Для gpt-image-1: 1024x1024, 1024x1536, 1536x1024
+    OPENAI_IMAGE_QUALITY = "high"  # Для gpt-image-1: low ($0.02), medium ($0.07), high ($0.19)
     OPENAI_IMAGE_COUNT = 1
     
     # Общие настройки

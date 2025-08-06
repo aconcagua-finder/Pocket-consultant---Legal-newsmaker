@@ -23,9 +23,35 @@ from prompts import (
 class OpenAIClient:
     """Клиент для работы с OpenAI API для генерации изображений"""
     
-    def __init__(self):
+    def __init__(self, web_config=None):
+        """
+        Инициализация клиента OpenAI
+        
+        Args:
+            web_config: Опциональная конфигурация из веб-интерфейса
+        """
         self.api_key = config.OPENAI_API_KEY
         self.client = None
+        
+        # Используем настройки из веб-конфига если они переданы
+        if web_config and 'api_models' in web_config:
+            openai_config = web_config['api_models'].get('openai', {})
+            self.model = openai_config.get('model', 'dall-e-3')
+            self.image_quality = openai_config.get('image_quality', 'standard')
+            self.image_style = openai_config.get('image_style', 'vivid')
+            self.image_size = openai_config.get('image_size', '1024x1024')
+            self.response_format = openai_config.get('response_format', 'url')
+            self.n_images = openai_config.get('n_images', 1)
+            self.moderation = openai_config.get('moderation', 'auto')  # Для gpt-image-1
+        else:
+            # Дефолтные значения
+            self.model = 'dall-e-3'
+            self.image_quality = 'standard'
+            self.image_style = 'vivid'
+            self.image_size = '1024x1024'
+            self.response_format = 'url'
+            self.n_images = 1
+            self.moderation = 'auto'
         
         if not self.api_key:
             logger.warning("OPENAI_API_KEY не установлен")
@@ -71,13 +97,32 @@ class OpenAIClient:
             logger.info("Генерирую комикс с помощью OpenAI Image Generation...")
             logger.debug(f"Промпт: {prompt[:100]}...")
             
-            response = self.client.images.generate(
-                model=config.OPENAI_IMAGE_MODEL,  # Используем модель из конфига
-                prompt=prompt,
-                size=PromptConfig.OPENAI_IMAGE_SIZE,
-                quality=PromptConfig.OPENAI_IMAGE_QUALITY,
-                n=PromptConfig.OPENAI_IMAGE_COUNT
-            )
+            # Формируем параметры в зависимости от модели
+            params = {
+                "model": self.model,
+                "prompt": prompt,
+                "size": self.image_size,
+                "n": self.n_images,
+                "response_format": self.response_format
+            }
+            
+            # Добавляем параметры в зависимости от модели
+            if self.model == 'dall-e-3':
+                # DALL-E 3 поддерживает quality и style
+                params["quality"] = self.image_quality  # standard или hd
+                if self.image_style:  # vivid или natural
+                    params["style"] = self.image_style
+            elif self.model == 'gpt-image-1':
+                # gpt-image-1 использует quality по-другому
+                quality_map = {'low': 'low', 'medium': 'medium', 'high': 'high'}
+                params["quality"] = quality_map.get(self.image_quality, 'high')
+                # Добавляем moderation для gpt-image-1
+                params["moderation"] = self.moderation
+            elif self.model == 'dall-e-2':
+                # DALL-E 2 не поддерживает quality и style
+                pass
+            
+            response = self.client.images.generate(**params)
             
             # Проверяем, есть ли URL или base64
             if hasattr(response.data[0], 'url') and response.data[0].url:

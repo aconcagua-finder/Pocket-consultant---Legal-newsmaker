@@ -2,7 +2,7 @@
   "api_models": {
     "openai": {
       "model": "gpt-image-1",
-      "image_quality": "standard",
+      "image_quality": "high",
       "image_style": "vivid",
       "image_size": "1024x1024"
     },

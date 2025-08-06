@@ -1,0 +1,114 @@
+{
+  "config": {
+    "api_models": {
+      "perplexity": {
+        "model": "sonar-deep-research",
+        "available_models": [
+          "sonar",
+          "sonar-pro",
+          "sonar-reasoning",
+          "sonar-reasoning-pro",
+          "sonar-deep-research"
+        ],
+        "max_tokens": 8192,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "presence_penalty": 0.0,
+        "frequency_penalty": 0.0,
+        "timeout": 300,
+        "search_domain_filter": [],
+        "return_citations": true,
+        "return_related_questions": false
+      },
+      "openai": {
+        "model": "dall-e-3",
+        "available_models": [
+          "dall-e-2",
+          "dall-e-3",
+          "gpt-image-1"
+        ],
+        "image_quality": "standard",
+        "quality_options": {
+          "dall-e-2": ["standard"],
+          "dall-e-3": ["standard", "hd"],
+          "gpt-image-1": ["low", "medium", "high"]
+        },
+        "image_style": "vivid",
+        "style_options": {
+          "dall-e-2": [],
+          "dall-e-3": ["vivid", "natural"],
+          "gpt-image-1": []
+        },
+        "image_size": "1024x1024",
+        "size_options": {
+          "dall-e-2": ["256x256", "512x512", "1024x1024"],
+          "dall-e-3": ["1024x1024", "1024x1792", "1792x1024"],
+          "gpt-image-1": ["256x256", "512x512", "1024x1024", "2048x2048", "4096x4096"]
+        },
+        "response_format": "url",
+        "moderation": "auto",
+        "n_images": 1,
+        "timeout": 120
+      }
+    },
+    "schedule": {
+      "collection_time": "08:30",
+      "publication_times": [
+        "09:05",
+        "11:03",
+        "13:07",
+        "15:09",
+        "17:05",
+        "19:02",
+        "21:07"
+      ],
+      "timezone": "Europe/Moscow"
+    },
+    "content": {
+      "max_news_per_day": 7,
+      "min_content_length": 50,
+      "max_content_length": 1500,
+      "similarity_threshold": 0.7,
+      "news_priorities": [
+        "КРИТИЧЕСКИ ВАЖНО",
+        "ОЧЕНЬ ВАЖНО",
+        "ВАЖНО",
+        "СРЕДНЯЯ ВАЖНОСТЬ",
+        "УМЕРЕННАЯ ВАЖНОСТЬ",
+        "ДОПОЛНИТЕЛЬНАЯ",
+        "НИЗКАЯ ВАЖНОСТЬ"
+      ],
+      "generate_images": true,
+      "publish_without_images": false
+    },
+    "telegram": {
+      "max_message_length": 4096,
+      "max_caption_length": 1024,
+      "parse_mode": "HTML"
+    },
+    "storage": {
+      "max_news_files": 30,
+      "max_history_items": 15,
+      "max_history_days": 7,
+      "data_dir": "data",
+      "logs_dir": "logs"
+    },
+    "retry": {
+      "max_retries": 3,
+      "retry_delay": 60,
+      "exponential_backoff": true
+    },
+    "monitoring": {
+      "log_level": "INFO",
+      "debug_mode": false,
+      "test_mode": false
+    }
+  },
+  "prompts": {
+    "perplexity_system": "Ты опытный юрист-практик, специализирующийся на актуальных изменениях законодательства. Отвечай кратко, по существу, с конкретными фактами и цифрами.",
+    "perplexity_collection": "Проведи глубокий анализ и собери ВСЕ значимые изменения в российском законодательстве за ВЧЕРА.\n\n🎯 ЗАДАЧА: Найди РОВНО 7 самых важных законодательных новостей за вчерашний день и ранжируй их по приоритету.\n\nТРЕБОВАНИЯ К КАЖДОЙ НОВОСТИ:\n- Конкретные цифры: суммы, проценты, сроки, даты\n- Указание кого именно затрагивает изменение\n- Практический эффект для граждан/бизнеса\n- Точная дата вступления в силу или принятия\n- Минимум 2-3 надежных источника\n\nСТИЛЬ:\n- Юридический с легкой иронией\n- Живой язык, как будто пишет опытный практик\n- 1-2 эмодзи на новость (умеренно!)\n- Каждая новость 100-150 слов",
+    "openai_comic": "Create a 4-panel comic strip about Russian legal news:\n\nSTYLE: Realistic style, photographic quality\n\n4-PANEL LAYOUT:\nPanel 1: Setup - Character discovers the legal change\nPanel 2: Reaction - Character processes the information\nPanel 3: Understanding - Character realizes the implications\nPanel 4: Resolution - Character adapts to new reality"
+  },
+  "created_at": "2025-08-06T14:00:00+03:00",
+  "updated_at": "2025-08-06T14:00:00+03:00"
+}

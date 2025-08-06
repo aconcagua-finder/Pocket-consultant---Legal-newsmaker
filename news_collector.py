@@ -36,11 +36,26 @@ from timezone_utils import now_msk, yesterday_msk, format_date_russian
 class NewsCollector:
     """Коллектор новостей для ежедневного сбора законодательных изменений"""
     
-    def __init__(self):
-        self.perplexity_client = PerplexityClient()
-        self.openai_client = OpenAIClient()
+    def __init__(self, web_config=None):
+        """
+        Инициализация коллектора новостей
+        
+        Args:
+            web_config: Опциональная конфигурация из веб-интерфейса
+        """
+        # Загружаем веб-конфиг если он не передан
+        if web_config is None:
+            web_config = self._load_web_config()
+        
+        self.web_config = web_config
+        self.perplexity_client = PerplexityClient(web_config)
+        self.openai_client = OpenAIClient(web_config)
         self.data_dir = Path(config.DATA_DIR)
         self.data_dir.mkdir(exist_ok=True)
+        
+        # Проверяем настройку генерации изображений
+        self.generate_images = web_config.get('content', {}).get('generate_images', True) if web_config else True
+        self.publish_without_images = web_config.get('content', {}).get('publish_without_images', False) if web_config else False
         
         # Создаем папку для изображений
         self.images_dir = self.data_dir / "images"
@@ -52,6 +67,13 @@ class NewsCollector:
         # Настройки для сбора
         self.max_retries = 3
         self.retry_delay = 60  # 1 минута между попытками
+    
+    def _load_web_config(self) -> Optional[Dict]:
+        """Загружает конфигурацию из веб-интерфейса"""
+        config_file = Path("config_web.json")
+        if config_file.exists():
+            return safe_json_read(config_file)
+        return None
     
     def _get_news_file_path(self, date: datetime) -> Path:
         """
@@ -95,6 +117,19 @@ class NewsCollector:
         Returns:
             List[Dict]: Обновленный список новостей с информацией об изображениях
         """
+        # Проверяем, нужно ли генерировать изображения
+        if not self.generate_images:
+            logger.info("🚫 Генерация изображений отключена в настройках")
+            # Помечаем все новости как без изображений
+            for news_item in news_list:
+                news_item.update({
+                    'image_path': None,
+                    'image_generated': False,
+                    'image_size': 0,
+                    'skip_image': True  # Флаг что изображение не нужно
+                })
+            return news_list
+        
         logger.info("🎨 Начинаем параллельную генерацию изображений...")
         
         # Подготавливаем промпты для всех новостей
@@ -412,9 +447,21 @@ class NewsCollector:
                     time.sleep(self.retry_delay)
                 continue
             
-            # Генерируем изображения параллельно для всех новостей
-            logger.info("🎨 Переходим к параллельной генерации изображений...")
-            news_list_with_images = self._generate_images_for_news(news_list, target_date)
+            # Генерируем изображения если включено
+            if self.generate_images:
+                logger.info("🎨 Переходим к параллельной генерации изображений...")
+                news_list_with_images = self._generate_images_for_news(news_list, target_date)
+            else:
+                logger.info("✏️ Пропускаем генерацию изображений (отключено в настройках)")
+                news_list_with_images = news_list
+                # Помечаем все новости как без изображений
+                for news_item in news_list_with_images:
+                    news_item.update({
+                        'image_path': None,
+                        'image_generated': False,
+                        'image_size': 0,
+                        'skip_image': True
+                    })
             
             # Сохраняем в файл
             if self._save_news_to_file(news_list_with_images, target_date):

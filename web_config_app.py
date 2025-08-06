@@ -10,15 +10,17 @@ import os
 import copy
 from pathlib import Path
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_file
 from flask_cors import CORS
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from loguru import logger
 import hashlib
 import secrets
+import shutil
 
 # Импортируем модули проекта
 from timezone_utils import now_msk
+from file_utils import safe_json_write, safe_json_read
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)  # Генерируем случайный секретный ключ
@@ -29,6 +31,10 @@ CONFIG_FILE = Path("config_web.json")
 DEFAULT_CONFIG_FILE = Path("config_defaults.json")
 PROMPTS_FILE = Path("prompts_custom.json")
 ENV_FILE = Path(".env")
+PROFILES_DIR = Path("profiles")
+
+# Создаем папку для профилей если её нет
+PROFILES_DIR.mkdir(exist_ok=True)
 
 # Дефолтная конфигурация
 DEFAULT_CONFIG = {
@@ -45,21 +51,41 @@ DEFAULT_CONFIG = {
             "max_tokens": 8192,
             "temperature": 0.7,
             "top_p": 0.9,
-            "timeout": 300
+            "presence_penalty": 0.0,
+            "frequency_penalty": 0.0,
+            "timeout": 300,
+            "search_domain_filter": [],  # Список доменов для фильтрации поиска
+            "return_citations": True,
+            "return_related_questions": False
         },
         "openai": {
-            "model": "gpt-image-1",  # Самая новая и крутая модель
+            "model": "dall-e-3",  # По умолчанию DALL-E 3
             "available_models": [
                 "dall-e-2",
                 "dall-e-3",
-                "gpt-image-1"
+                "gpt-image-1"  # Новая модель с поддержкой до 4096x4096
             ],
             "image_quality": "standard",
-            "quality_options": ["standard", "hd"],
+            "quality_options": {
+                "dall-e-2": ["standard"],
+                "dall-e-3": ["standard", "hd"],
+                "gpt-image-1": ["low", "medium", "high"]
+            },
             "image_style": "vivid",
-            "style_options": ["vivid", "natural"],
+            "style_options": {
+                "dall-e-2": [],  # Нет опций стиля
+                "dall-e-3": ["vivid", "natural"],
+                "gpt-image-1": []  # Нет опций стиля
+            },
             "image_size": "1024x1024",
-            "size_options": ["1024x1024", "1024x1792", "1792x1024"],
+            "size_options": {
+                "dall-e-2": ["256x256", "512x512", "1024x1024"],
+                "dall-e-3": ["1024x1024", "1024x1792", "1792x1024"],
+                "gpt-image-1": ["256x256", "512x512", "1024x1024", "2048x2048", "4096x4096"]
+            },
+            "response_format": "url",  # url или b64_json
+            "moderation": "auto",  # auto или low (только для gpt-image-1)
+            "n_images": 1,  # Количество изображений (DALL-E 3 и gpt-image-1 поддерживают только 1)
             "timeout": 120
         }
     },
@@ -89,7 +115,9 @@ DEFAULT_CONFIG = {
             "УМЕРЕННАЯ ВАЖНОСТЬ",
             "ДОПОЛНИТЕЛЬНАЯ",
             "НИЗКАЯ ВАЖНОСТЬ"
-        ]
+        ],
+        "generate_images": True,  # Флаг для генерации изображений
+        "publish_without_images": False  # Публиковать без изображений если генерация не удалась
     },
     "telegram": {
         "max_message_length": 4096,
@@ -147,14 +175,137 @@ Panel 4: Resolution - Character adapts to new reality"""
 
 
 class ConfigManager:
-    """Менеджер конфигурации с поддержкой истории изменений"""
+    """Менеджер конфигурации с поддержкой истории изменений и профилей"""
     
     def __init__(self):
+        self.current_profile = "Pocket Consultant"  # Дефолтный профиль
+        self.profiles = self.load_profiles()
         self.config = self.load_config()
         self.prompts = self.load_prompts()
         self.api_keys = self.load_api_keys()
         self.history = []
         self.max_history = 10
+        
+        # Создаем дефолтный профиль если его нет
+        if self.current_profile not in self.profiles:
+            self.save_profile(self.current_profile)
+    
+    def load_profiles(self) -> Dict[str, Dict]:
+        """Загружает список всех профилей"""
+        profiles = {}
+        
+        # Сканируем папку профилей
+        for profile_file in PROFILES_DIR.glob("*.json"):
+            try:
+                profile_name = profile_file.stem  # Имя файла без расширения
+                profile_data = safe_json_read(profile_file)
+                if profile_data:
+                    profiles[profile_name] = profile_data
+            except Exception as e:
+                logger.error(f"Ошибка загрузки профиля {profile_file}: {e}")
+        
+        # Если нет профилей, создаем дефолтный
+        if not profiles:
+            profiles["Pocket Consultant"] = {
+                "config": copy.deepcopy(DEFAULT_CONFIG),
+                "prompts": copy.deepcopy(DEFAULT_PROMPTS),
+                "created_at": now_msk().isoformat(),
+                "updated_at": now_msk().isoformat()
+            }
+        
+        return profiles
+    
+    def save_profile(self, profile_name: str) -> bool:
+        """Сохраняет текущие настройки в профиль"""
+        try:
+            profile_path = PROFILES_DIR / f"{profile_name}.json"
+            profile_data = {
+                "config": self.config,
+                "prompts": self.prompts,
+                "created_at": self.profiles.get(profile_name, {}).get("created_at", now_msk().isoformat()),
+                "updated_at": now_msk().isoformat()
+            }
+            
+            if safe_json_write(profile_path, profile_data):
+                self.profiles[profile_name] = profile_data
+                logger.info(f"Профиль '{profile_name}' успешно сохранен")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка сохранения профиля: {e}")
+            return False
+    
+    def load_profile(self, profile_name: str) -> bool:
+        """Загружает настройки из профиля"""
+        try:
+            if profile_name not in self.profiles:
+                logger.error(f"Профиль '{profile_name}' не найден")
+                return False
+            
+            profile_data = self.profiles[profile_name]
+            self.config = copy.deepcopy(profile_data.get("config", DEFAULT_CONFIG))
+            self.prompts = copy.deepcopy(profile_data.get("prompts", DEFAULT_PROMPTS))
+            self.current_profile = profile_name
+            
+            # Сохраняем как текущую конфигурацию
+            self.save_config()
+            self.save_prompts()
+            
+            logger.info(f"Профиль '{profile_name}' успешно загружен")
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка загрузки профиля: {e}")
+            return False
+    
+    def delete_profile(self, profile_name: str) -> bool:
+        """Удаляет профиль"""
+        try:
+            if profile_name == "Pocket Consultant":
+                logger.warning("Нельзя удалить дефолтный профиль")
+                return False
+            
+            profile_path = PROFILES_DIR / f"{profile_name}.json"
+            if profile_path.exists():
+                profile_path.unlink()
+                del self.profiles[profile_name]
+                
+                # Если удаляем текущий профиль, переключаемся на дефолтный
+                if self.current_profile == profile_name:
+                    self.load_profile("Pocket Consultant")
+                
+                logger.info(f"Профиль '{profile_name}' удален")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка удаления профиля: {e}")
+            return False
+    
+    def duplicate_profile(self, source_name: str, new_name: str) -> bool:
+        """Дублирует профиль с новым именем"""
+        try:
+            if source_name not in self.profiles:
+                logger.error(f"Исходный профиль '{source_name}' не найден")
+                return False
+            
+            if new_name in self.profiles:
+                logger.error(f"Профиль '{new_name}' уже существует")
+                return False
+            
+            # Копируем данные профиля
+            source_data = copy.deepcopy(self.profiles[source_name])
+            source_data["created_at"] = now_msk().isoformat()
+            source_data["updated_at"] = now_msk().isoformat()
+            
+            # Сохраняем новый профиль
+            profile_path = PROFILES_DIR / f"{new_name}.json"
+            if safe_json_write(profile_path, source_data):
+                self.profiles[new_name] = source_data
+                logger.info(f"Профиль '{new_name}' создан как копия '{source_name}'")
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка дублирования профиля: {e}")
+            return False
         
     def load_config(self) -> Dict:
         """Загружает конфигурацию из файла или создает дефолтную"""
@@ -170,6 +321,9 @@ class ConfigManager:
         else:
             # Сохраняем дефолтную конфигурацию
             self.save_defaults()
+            # Пытаемся загрузить из дефолтного профиля
+            if "Pocket Consultant" in self.profiles:
+                return copy.deepcopy(self.profiles["Pocket Consultant"].get("config", DEFAULT_CONFIG))
             return copy.deepcopy(DEFAULT_CONFIG)
     
     def load_prompts(self) -> Dict:
@@ -457,9 +611,12 @@ config_manager = ConfigManager()
 def index():
     """Главная страница с формами настроек"""
     validation = config_manager.validate_config()
-    return render_template('config.html', 
+    # Используем новый шаблон
+    return render_template('config_new.html', 
                          config=config_manager.config,
                          prompts=config_manager.prompts,
+                         profiles=list(config_manager.profiles.keys()),
+                         current_profile=config_manager.current_profile,
                          validation=validation)
 
 
@@ -482,6 +639,8 @@ def get_config():
         "config": config_manager.config,
         "prompts": config_manager.prompts,
         "api_keys": masked_keys,
+        "profiles": list(config_manager.profiles.keys()),
+        "current_profile": config_manager.current_profile,
         "validation": config_manager.validate_config()
     })
 
@@ -503,10 +662,19 @@ def update_config():
         # Обновляем API ключи если они предоставлены
         if 'api_keys' in data:
             # Сохраняем только непустые и не маскированные ключи
+            # Используем правильный маппинг ключей
             clean_keys = {}
             for key, value in data['api_keys'].items():
                 if value and '*' not in value:  # Не сохраняем маскированные ключи
-                    clean_keys[key] = value
+                    # Преобразуем ключи к нужному формату для save_api_keys
+                    if key == 'PERPLEXITY_API_KEY':
+                        clean_keys['perplexity'] = value
+                    elif key == 'OPENAI_API_KEY':
+                        clean_keys['openai'] = value
+                    elif key == 'TELEGRAM_BOT_TOKEN':
+                        clean_keys['telegram_bot'] = value
+                    elif key == 'TELEGRAM_CHANNEL_ID':
+                        clean_keys['telegram_channel'] = value
             
             if clean_keys:
                 config_manager.save_api_keys(clean_keys)
@@ -631,6 +799,138 @@ def import_config():
             "success": False,
             "message": str(e)
         }), 400
+
+
+# API для работы с профилями
+@app.route('/api/profiles', methods=['GET'])
+def get_profiles():
+    """Получить список всех профилей"""
+    profiles_info = []
+    for name, data in config_manager.profiles.items():
+        profiles_info.append({
+            "name": name,
+            "created_at": data.get("created_at", ""),
+            "updated_at": data.get("updated_at", ""),
+            "is_current": name == config_manager.current_profile
+        })
+    return jsonify(profiles_info)
+
+
+@app.route('/api/profiles/load', methods=['POST'])
+def load_profile():
+    """Загрузить профиль"""
+    try:
+        profile_name = request.json.get('profile_name')
+        if not profile_name:
+            return jsonify({"success": False, "message": "Не указано имя профиля"}), 400
+        
+        if config_manager.load_profile(profile_name):
+            return jsonify({
+                "success": True,
+                "message": f"Профиль '{profile_name}' загружен",
+                "config": config_manager.config,
+                "prompts": config_manager.prompts
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Не удалось загрузить профиль '{profile_name}'"
+            }), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/profiles/save', methods=['POST'])
+def save_profile():
+    """Сохранить текущие настройки в профиль"""
+    try:
+        profile_name = request.json.get('profile_name', config_manager.current_profile)
+        
+        if config_manager.save_profile(profile_name):
+            return jsonify({
+                "success": True,
+                "message": f"Профиль '{profile_name}' сохранен"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Не удалось сохранить профиль '{profile_name}'"
+            }), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/profiles/create', methods=['POST'])
+def create_profile():
+    """Создать новый профиль"""
+    try:
+        profile_name = request.json.get('profile_name')
+        if not profile_name:
+            return jsonify({"success": False, "message": "Не указано имя профиля"}), 400
+        
+        if profile_name in config_manager.profiles:
+            return jsonify({"success": False, "message": "Профиль с таким именем уже существует"}), 400
+        
+        # Сохраняем текущие настройки как новый профиль
+        if config_manager.save_profile(profile_name):
+            config_manager.current_profile = profile_name
+            return jsonify({
+                "success": True,
+                "message": f"Профиль '{profile_name}' создан"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Не удалось создать профиль '{profile_name}'"
+            }), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/profiles/delete', methods=['POST'])
+def delete_profile():
+    """Удалить профиль"""
+    try:
+        profile_name = request.json.get('profile_name')
+        if not profile_name:
+            return jsonify({"success": False, "message": "Не указано имя профиля"}), 400
+        
+        if config_manager.delete_profile(profile_name):
+            return jsonify({
+                "success": True,
+                "message": f"Профиль '{profile_name}' удален"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Не удалось удалить профиль '{profile_name}'"
+            }), 400
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/profiles/duplicate', methods=['POST'])
+def duplicate_profile():
+    """Дублировать профиль"""
+    try:
+        source_name = request.json.get('source_name')
+        new_name = request.json.get('new_name')
+        
+        if not source_name or not new_name:
+            return jsonify({"success": False, "message": "Не указаны имена профилей"}), 400
+        
+        if config_manager.duplicate_profile(source_name, new_name):
+            return jsonify({
+                "success": True,
+                "message": f"Профиль '{new_name}' создан как копия '{source_name}'"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Не удалось дублировать профиль"
+            }), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 def main():

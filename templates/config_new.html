@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚙️ NEWSMAKER Control Panel</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Профили */
+        .profile-bar {
+            background: var(--glass);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .profile-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .profile-selector select {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .profile-actions button {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: var(--dark);
+            color: white;
+        }
+        
+        /* Основной контент */
+        .main-content {
+            background: var(--glass);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: var(--dark);
+            opacity: 0.7;
+        }
+        
+        /* Табы */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 10px;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--dark);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Формы */
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--light);
+            border-radius: 12px;
+        }
+        
+        .form-section h3 {
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .help-text {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* Чекбокс */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        /* Уведомления */
+        .notification {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .notification.success {
+            background: #d1fae5;
+            color: #047857;
+        }
+        
+        .notification.error {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .notification.warning {
+            background: #fed7aa;
+            color: #c2410c;
+        }
+        
+        /* Модальное окно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            color: var(--dark);
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        /* Действия */
+        .actions {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .profile-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .actions {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Панель профилей -->
+        <div class="profile-bar">
+            <div class="profile-selector">
+                <i class="fas fa-user-circle" style="font-size: 24px; color: var(--primary);"></i>
+                <label><strong>Профиль:</strong></label>
+                <select id="profileSelect">
+                    <option value="Pocket Consultant">Pocket Consultant</option>
+                </select>
+            </div>
+            <div class="profile-actions">
+                <button class="btn-primary" onclick="loadProfile()">
+                    <i class="fas fa-download"></i> Загрузить
+                </button>
+                <button class="btn-success" onclick="saveProfile()">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <button class="btn-secondary" onclick="showNewProfileModal()">
+                    <i class="fas fa-plus"></i> Новый
+                </button>
+                <button class="btn-secondary" onclick="duplicateProfile()">
+                    <i class="fas fa-copy"></i> Дублировать
+                </button>
+                <button class="btn-danger" onclick="deleteProfile()">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+            </div>
+        </div>
+        
+        <!-- Основной контент -->
+        <div class="main-content">
+            <div class="header">
+                <h1>🚀 NEWSMAKER Control Panel</h1>
+                <p>Управление конфигурацией юридического новостного бота</p>
+            </div>
+            
+            <!-- Уведомления -->
+            <div id="notifications"></div>
+            
+            <!-- Табы -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="api">
+                    <i class="fas fa-plug"></i> API настройки
+                </button>
+                <button class="tab-btn" data-tab="schedule">
+                    <i class="fas fa-clock"></i> Расписание
+                </button>
+                <button class="tab-btn" data-tab="content">
+                    <i class="fas fa-file-alt"></i> Контент
+                </button>
+                <button class="tab-btn" data-tab="prompts">
+                    <i class="fas fa-comment-dots"></i> Промпты
+                </button>
+                <button class="tab-btn" data-tab="keys">
+                    <i class="fas fa-key"></i> API ключи
+                </button>
+            </div>
+            
+            <!-- Контент табов -->
+            <div class="tab-content active" id="api-tab">
+                <!-- Perplexity настройки -->
+                <div class="form-section">
+                    <h3><i class="fas fa-brain"></i> Perplexity API</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Модель</label>
+                            <select id="perplexity-model">
+                                <option value="sonar">Sonar</option>
+                                <option value="sonar-pro">Sonar Pro</option>
+                                <option value="sonar-reasoning">Sonar Reasoning</option>
+                                <option value="sonar-reasoning-pro">Sonar Reasoning Pro</option>
+                                <option value="sonar-deep-research" selected>Sonar Deep Research</option>
+                            </select>
+                            <div class="help-text">Deep Research лучше для комплексного анализа</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Max Tokens</label>
+                            <input type="number" id="perplexity-max-tokens" value="8192" min="1" max="200000">
+                            <div class="help-text">Максимальная длина ответа (до 200K для Sonar Pro)</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Temperature</label>
+                            <input type="number" id="perplexity-temperature" value="0.7" min="0" max="2" step="0.1">
+                            <div class="help-text">Креативность ответов (0 - точные, 2 - креативные)</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Top P</label>
+                            <input type="number" id="perplexity-top-p" value="0.9" min="0" max="1" step="0.1">
+                            <div class="help-text">Nucleus sampling (рекомендуется 0.9)</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Presence Penalty</label>
+                            <input type="number" id="perplexity-presence-penalty" value="0" min="-2" max="2" step="0.1">
+                            <div class="help-text">Снижает повторы тем (-2 до 2)</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Frequency Penalty</label>
+                            <input type="number" id="perplexity-frequency-penalty" value="0" min="-2" max="2" step="0.1">
+                            <div class="help-text">Снижает повторы слов (-2 до 2)</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Фильтр доменов (один на строку)</label>
+                        <textarea id="perplexity-domains" rows="3" placeholder="example.com&#10;news.com"></textarea>
+                        <div class="help-text">Ограничить поиск определенными доменами</div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="perplexity-citations" checked>
+                        <label for="perplexity-citations">Возвращать источники</label>
+                    </div>
+                </div>
+                
+                <!-- OpenAI настройки -->
+                <div class="form-section">
+                    <h3><i class="fas fa-image"></i> OpenAI Image Generation</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Модель</label>
+                            <select id="openai-model" onchange="updateOpenAIOptions()">
+                                <option value="dall-e-2">DALL-E 2</option>
+                                <option value="dall-e-3" selected>DALL-E 3</option>
+                                <option value="gpt-image-1">GPT-Image-1 (до 4096x4096)</option>
+                            </select>
+                            <div class="help-text">GPT-Image-1 - новейшая модель с высоким разрешением</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Размер изображения</label>
+                            <select id="openai-size">
+                                <option value="1024x1024">1024x1024</option>
+                                <option value="1024x1792">1024x1792</option>
+                                <option value="1792x1024">1792x1024</option>
+                            </select>
+                            <div class="help-text">Разрешение генерируемых изображений</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Качество</label>
+                            <select id="openai-quality">
+                                <option value="standard">Standard</option>
+                                <option value="hd">HD (DALL-E 3)</option>
+                            </select>
+                            <div class="help-text">HD - лучше детализация, но дороже</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Стиль</label>
+                            <select id="openai-style">
+                                <option value="vivid">Vivid (яркий)</option>
+                                <option value="natural">Natural (естественный)</option>
+                            </select>
+                            <div class="help-text">Vivid - более драматичные изображения</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="schedule-tab">
+                <div class="form-section">
+                    <h3><i class="fas fa-calendar-alt"></i> Расписание публикаций</h3>
+                    <div class="form-group">
+                        <label>Время сбора новостей</label>
+                        <input type="time" id="collection-time" value="08:30">
+                        <div class="help-text">Время ежедневного сбора новостей (МСК)</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Время публикаций (7 слотов)</label>
+                        <div class="form-row">
+                            <input type="time" id="pub-time-1" value="09:05">
+                            <input type="time" id="pub-time-2" value="11:03">
+                            <input type="time" id="pub-time-3" value="13:07">
+                            <input type="time" id="pub-time-4" value="15:09">
+                        </div>
+                        <div class="form-row" style="margin-top: 10px;">
+                            <input type="time" id="pub-time-5" value="17:05">
+                            <input type="time" id="pub-time-6" value="19:02">
+                            <input type="time" id="pub-time-7" value="21:07">
+                        </div>
+                        <div class="help-text">Время публикации каждой из 7 новостей (МСК)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="content-tab">
+                <div class="form-section">
+                    <h3><i class="fas fa-cog"></i> Настройки контента</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Новостей в день</label>
+                            <input type="number" id="news-per-day" value="7" min="1" max="20">
+                            <div class="help-text">Количество новостей для сбора</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Мин. длина контента</label>
+                            <input type="number" id="min-content" value="50" min="10">
+                            <div class="help-text">Минимальная длина текста новости</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Макс. длина контента</label>
+                            <input type="number" id="max-content" value="1500" max="4000">
+                            <div class="help-text">Максимальная длина текста новости</div>
+                        </div>
+                    </div>
+                    <div class="form-section" style="background: white; margin-top: 20px;">
+                        <h4 style="margin-bottom: 15px;"><i class="fas fa-images"></i> Настройки изображений</h4>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="generate-images" checked onchange="toggleImageSettings()">
+                            <label for="generate-images"><strong>Генерировать изображения</strong></label>
+                        </div>
+                        <div class="checkbox-group" style="margin-top: 10px;">
+                            <input type="checkbox" id="publish-without-images">
+                            <label for="publish-without-images">Публиковать без изображений если генерация не удалась</label>
+                        </div>
+                        <div class="help-text">Если отключить генерацию, новости будут публиковаться только текстом</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="prompts-tab">
+                <div class="form-section">
+                    <h3><i class="fas fa-robot"></i> Системный промпт Perplexity</h3>
+                    <div class="form-group">
+                        <textarea id="perplexity-system-prompt" rows="5"></textarea>
+                        <div class="help-text">Системная инструкция для Perplexity</div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3><i class="fas fa-newspaper"></i> Промпт сбора новостей</h3>
+                    <div class="form-group">
+                        <textarea id="perplexity-collection-prompt" rows="10"></textarea>
+                        <div class="help-text">Основной промпт для сбора новостей</div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h3><i class="fas fa-palette"></i> Промпт генерации комиксов</h3>
+                    <div class="form-group">
+                        <textarea id="openai-comic-prompt" rows="8"></textarea>
+                        <div class="help-text">Промпт для создания 4-панельных комиксов</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="keys-tab">
+                <div class="form-section">
+                    <h3><i class="fas fa-shield-alt"></i> API Ключи</h3>
+                    <div class="notification warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Внимание: храните ключи в безопасности. Не делитесь ими публично.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Perplexity API Key</label>
+                        <input type="password" id="perplexity-key" placeholder="pplx-xxxxxxxxxxxxxxxx">
+                        <div class="help-text">Получить на perplexity.ai/settings/api</div>
+                    </div>
+                    <div class="form-group">
+                        <label>OpenAI API Key</label>
+                        <input type="password" id="openai-key" placeholder="sk-xxxxxxxxxxxxxxxx">
+                        <div class="help-text">Получить на platform.openai.com/api-keys</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Telegram Bot Token</label>
+                        <input type="password" id="telegram-token" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                        <div class="help-text">Получить у @BotFather в Telegram</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Telegram Channel ID</label>
+                        <input type="text" id="telegram-channel" placeholder="@channel_name или -100123456789">
+                        <div class="help-text">ID или @username канала</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Кнопки действий -->
+        <div class="actions">
+            <button class="action-btn btn-primary" onclick="saveConfiguration()">
+                <i class="fas fa-save"></i> Сохранить все
+            </button>
+            <button class="action-btn btn-secondary" onclick="resetToDefaults()">
+                <i class="fas fa-undo"></i> Сбросить
+            </button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для нового профиля -->
+    <div class="modal" id="newProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать новый профиль</h3>
+            </div>
+            <div class="form-group">
+                <label>Название профиля</label>
+                <input type="text" id="newProfileName" placeholder="Введите название профиля">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+                <button class="btn-primary" onclick="createProfile()">Создать</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Инициализация
+        let currentConfig = {};
+        let currentPrompts = {};
+        let profiles = [];
+        let currentProfile = 'Pocket Consultant';
+        
+        // Загрузка конфигурации при старте
+        window.addEventListener('DOMContentLoaded', () => {
+            loadConfiguration();
+            setupEventListeners();
+        });
+        
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Табы
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    switchTab(e.target.dataset.tab);
+                });
+            });
+        }
+        
+        // Переключение табов
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // Загрузка конфигурации
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                
+                currentConfig = data.config;
+                currentPrompts = data.prompts;
+                profiles = data.profiles || ['Pocket Consultant'];
+                currentProfile = data.current_profile || 'Pocket Consultant';
+                
+                // Обновляем селектор профилей
+                updateProfileSelector();
+                
+                // Заполняем формы
+                populateForms();
+                
+                // Проверяем валидацию
+                if (data.validation) {
+                    showValidation(data.validation);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка загрузки конфигурации: ' + error.message);
+            }
+        }
+        
+        // Обновление селектора профилей
+        function updateProfileSelector() {
+            const select = document.getElementById('profileSelect');
+            select.innerHTML = '';
+            
+            profiles.forEach(profile => {
+                const option = document.createElement('option');
+                option.value = profile;
+                option.textContent = profile;
+                if (profile === currentProfile) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+        
+        // Заполнение форм данными
+        function populateForms() {
+            // Perplexity
+            document.getElementById('perplexity-model').value = currentConfig.api_models?.perplexity?.model || 'sonar-deep-research';
+            document.getElementById('perplexity-max-tokens').value = currentConfig.api_models?.perplexity?.max_tokens || 8192;
+            document.getElementById('perplexity-temperature').value = currentConfig.api_models?.perplexity?.temperature || 0.7;
+            document.getElementById('perplexity-top-p').value = currentConfig.api_models?.perplexity?.top_p || 0.9;
+            document.getElementById('perplexity-presence-penalty').value = currentConfig.api_models?.perplexity?.presence_penalty || 0;
+            document.getElementById('perplexity-frequency-penalty').value = currentConfig.api_models?.perplexity?.frequency_penalty || 0;
+            document.getElementById('perplexity-citations').checked = currentConfig.api_models?.perplexity?.return_citations !== false;
+            document.getElementById('perplexity-domains').value = (currentConfig.api_models?.perplexity?.search_domain_filter || []).join('\n');
+            
+            // OpenAI
+            document.getElementById('openai-model').value = currentConfig.api_models?.openai?.model || 'dall-e-3';
+            updateOpenAIOptions();
+            document.getElementById('openai-size').value = currentConfig.api_models?.openai?.image_size || '1024x1024';
+            document.getElementById('openai-quality').value = currentConfig.api_models?.openai?.image_quality || 'standard';
+            document.getElementById('openai-style').value = currentConfig.api_models?.openai?.image_style || 'vivid';
+            
+            // Расписание
+            document.getElementById('collection-time').value = currentConfig.schedule?.collection_time || '08:30';
+            const pubTimes = currentConfig.schedule?.publication_times || [];
+            for (let i = 0; i < 7; i++) {
+                const input = document.getElementById(`pub-time-${i+1}`);
+                if (input && pubTimes[i]) {
+                    input.value = pubTimes[i];
+                }
+            }
+            
+            // Контент
+            document.getElementById('news-per-day').value = currentConfig.content?.max_news_per_day || 7;
+            document.getElementById('min-content').value = currentConfig.content?.min_content_length || 50;
+            document.getElementById('max-content').value = currentConfig.content?.max_content_length || 1500;
+            document.getElementById('generate-images').checked = currentConfig.content?.generate_images !== false;
+            document.getElementById('publish-without-images').checked = currentConfig.content?.publish_without_images === true;
+            
+            // Промпты
+            document.getElementById('perplexity-system-prompt').value = currentPrompts.perplexity_system || '';
+            document.getElementById('perplexity-collection-prompt').value = currentPrompts.perplexity_collection || '';
+            document.getElementById('openai-comic-prompt').value = currentPrompts.openai_comic || '';
+        }
+        
+        // Обновление опций OpenAI в зависимости от модели
+        function updateOpenAIOptions() {
+            const model = document.getElementById('openai-model').value;
+            const sizeSelect = document.getElementById('openai-size');
+            const qualitySelect = document.getElementById('openai-quality');
+            const styleSelect = document.getElementById('openai-style');
+            
+            // Очищаем опции
+            sizeSelect.innerHTML = '';
+            qualitySelect.innerHTML = '';
+            
+            if (model === 'dall-e-2') {
+                // DALL-E 2 размеры
+                ['256x256', '512x512', '1024x1024'].forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                
+                // Только standard для DALL-E 2
+                qualitySelect.innerHTML = '<option value="standard">Standard</option>';
+                styleSelect.disabled = true;
+                
+            } else if (model === 'dall-e-3') {
+                // DALL-E 3 размеры
+                ['1024x1024', '1024x1792', '1792x1024'].forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                
+                // Standard и HD для DALL-E 3
+                qualitySelect.innerHTML = `
+                    <option value="standard">Standard</option>
+                    <option value="hd">HD</option>
+                `;
+                styleSelect.disabled = false;
+                
+            } else if (model === 'gpt-image-1') {
+                // GPT-Image-1 размеры
+                ['256x256', '512x512', '1024x1024', '2048x2048', '4096x4096'].forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                
+                // Low, Medium, High для GPT-Image-1
+                qualitySelect.innerHTML = `
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                `;
+                styleSelect.disabled = true;
+            }
+        }
+        
+        // Сохранение конфигурации
+        async function saveConfiguration() {
+            try {
+                // Собираем данные из форм
+                const config = {
+                    api_models: {
+                        perplexity: {
+                            model: document.getElementById('perplexity-model').value,
+                            max_tokens: parseInt(document.getElementById('perplexity-max-tokens').value),
+                            temperature: parseFloat(document.getElementById('perplexity-temperature').value),
+                            top_p: parseFloat(document.getElementById('perplexity-top-p').value),
+                            presence_penalty: parseFloat(document.getElementById('perplexity-presence-penalty').value),
+                            frequency_penalty: parseFloat(document.getElementById('perplexity-frequency-penalty').value),
+                            return_citations: document.getElementById('perplexity-citations').checked,
+                            search_domain_filter: document.getElementById('perplexity-domains').value.split('\n').filter(d => d.trim()),
+                            timeout: 300
+                        },
+                        openai: {
+                            model: document.getElementById('openai-model').value,
+                            image_size: document.getElementById('openai-size').value,
+                            image_quality: document.getElementById('openai-quality').value,
+                            image_style: document.getElementById('openai-style').value,
+                            response_format: 'url',
+                            n_images: 1,
+                            timeout: 120
+                        }
+                    },
+                    schedule: {
+                        collection_time: document.getElementById('collection-time').value,
+                        publication_times: [],
+                        timezone: 'Europe/Moscow'
+                    },
+                    content: {
+                        max_news_per_day: parseInt(document.getElementById('news-per-day').value),
+                        min_content_length: parseInt(document.getElementById('min-content').value),
+                        max_content_length: parseInt(document.getElementById('max-content').value),
+                        generate_images: document.getElementById('generate-images').checked,
+                        publish_without_images: document.getElementById('publish-without-images').checked,
+                        similarity_threshold: 0.7,
+                        news_priorities: [
+                            "КРИТИЧЕСКИ ВАЖНО",
+                            "ОЧЕНЬ ВАЖНО",
+                            "ВАЖНО",
+                            "СРЕДНЯЯ ВАЖНОСТЬ",
+                            "УМЕРЕННАЯ ВАЖНОСТЬ",
+                            "ДОПОЛНИТЕЛЬНАЯ",
+                            "НИЗКАЯ ВАЖНОСТЬ"
+                        ]
+                    },
+                    telegram: currentConfig.telegram || {},
+                    storage: currentConfig.storage || {},
+                    retry: currentConfig.retry || {},
+                    monitoring: currentConfig.monitoring || {}
+                };
+                
+                // Собираем времена публикации
+                for (let i = 1; i <= 7; i++) {
+                    const time = document.getElementById(`pub-time-${i}`).value;
+                    if (time) {
+                        config.schedule.publication_times.push(time);
+                    }
+                }
+                
+                // Собираем промпты
+                const prompts = {
+                    perplexity_system: document.getElementById('perplexity-system-prompt').value,
+                    perplexity_collection: document.getElementById('perplexity-collection-prompt').value,
+                    openai_comic: document.getElementById('openai-comic-prompt').value
+                };
+                
+                // Собираем API ключи (только если изменены)
+                const apiKeys = {};
+                const perplexityKey = document.getElementById('perplexity-key').value;
+                const openaiKey = document.getElementById('openai-key').value;
+                const telegramToken = document.getElementById('telegram-token').value;
+                const telegramChannel = document.getElementById('telegram-channel').value;
+                
+                if (perplexityKey && !perplexityKey.includes('*')) {
+                    apiKeys.PERPLEXITY_API_KEY = perplexityKey;
+                }
+                if (openaiKey && !openaiKey.includes('*')) {
+                    apiKeys.OPENAI_API_KEY = openaiKey;
+                }
+                if (telegramToken && !telegramToken.includes('*')) {
+                    apiKeys.TELEGRAM_BOT_TOKEN = telegramToken;
+                }
+                if (telegramChannel) {
+                    apiKeys.TELEGRAM_CHANNEL_ID = telegramChannel;
+                }
+                
+                // Отправляем на сервер
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        config: config,
+                        prompts: prompts,
+                        api_keys: apiKeys
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('success', 'Конфигурация успешно сохранена!');
+                    
+                    // Сохраняем текущий профиль
+                    await saveProfile();
+                    
+                    if (result.validation) {
+                        showValidation(result.validation);
+                    }
+                } else {
+                    showNotification('error', 'Ошибка сохранения: ' + result.message);
+                }
+                
+            } catch (error) {
+                showNotification('error', 'Ошибка: ' + error.message);
+            }
+        }
+        
+        // Управление профилями
+        async function loadProfile() {
+            const profileName = document.getElementById('profileSelect').value;
+            try {
+                const response = await fetch('/api/profiles/load', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_name: profileName })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    currentConfig = result.config;
+                    currentPrompts = result.prompts;
+                    currentProfile = profileName;
+                    populateForms();
+                    showNotification('success', `Профиль "${profileName}" загружен`);
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка загрузки профиля: ' + error.message);
+            }
+        }
+        
+        async function saveProfile() {
+            const profileName = document.getElementById('profileSelect').value;
+            try {
+                const response = await fetch('/api/profiles/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_name: profileName })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('success', `Профиль "${profileName}" сохранен`);
+                }
+            } catch (error) {
+                console.error('Ошибка сохранения профиля:', error);
+            }
+        }
+        
+        function showNewProfileModal() {
+            document.getElementById('newProfileModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('newProfileModal').classList.remove('active');
+        }
+        
+        async function createProfile() {
+            const profileName = document.getElementById('newProfileName').value.trim();
+            if (!profileName) {
+                showNotification('error', 'Введите название профиля');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/profiles/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_name: profileName })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    profiles.push(profileName);
+                    currentProfile = profileName;
+                    updateProfileSelector();
+                    closeModal();
+                    showNotification('success', `Профиль "${profileName}" создан`);
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка создания профиля: ' + error.message);
+            }
+        }
+        
+        async function duplicateProfile() {
+            const sourceName = document.getElementById('profileSelect').value;
+            const newName = prompt('Введите название для копии профиля:', sourceName + ' - копия');
+            
+            if (!newName || newName.trim() === '') return;
+            
+            try {
+                const response = await fetch('/api/profiles/duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        source_name: sourceName,
+                        new_name: newName.trim()
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    profiles.push(newName.trim());
+                    updateProfileSelector();
+                    showNotification('success', result.message);
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка дублирования: ' + error.message);
+            }
+        }
+        
+        async function deleteProfile() {
+            const profileName = document.getElementById('profileSelect').value;
+            
+            if (profileName === 'Pocket Consultant') {
+                showNotification('error', 'Нельзя удалить дефолтный профиль');
+                return;
+            }
+            
+            if (!confirm(`Удалить профиль "${profileName}"?`)) return;
+            
+            try {
+                const response = await fetch('/api/profiles/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_name: profileName })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    profiles = profiles.filter(p => p !== profileName);
+                    currentProfile = 'Pocket Consultant';
+                    updateProfileSelector();
+                    await loadProfile();
+                    showNotification('success', result.message);
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка удаления: ' + error.message);
+            }
+        }
+        
+        // Сброс к дефолтным настройкам
+        async function resetToDefaults() {
+            if (!confirm('Сбросить все настройки к дефолтным значениям?')) return;
+            
+            try {
+                const response = await fetch('/api/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    currentConfig = result.config;
+                    currentPrompts = result.prompts;
+                    populateForms();
+                    showNotification('success', 'Настройки сброшены к дефолтным');
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка сброса: ' + error.message);
+            }
+        }
+        
+        // Отображение уведомлений
+        function showNotification(type, message) {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-times-circle' : 'fa-exclamation-triangle';
+            
+            notification.innerHTML = `
+                <i class="fas ${icon}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // Отображение валидации
+        function showValidation(validation) {
+            const container = document.getElementById('notifications');
+            
+            if (validation.errors && validation.errors.length > 0) {
+                validation.errors.forEach(error => {
+                    showNotification('error', 'Ошибка: ' + error);
+                });
+            }
+            
+            if (validation.warnings && validation.warnings.length > 0) {
+                validation.warnings.forEach(warning => {
+                    showNotification('warning', 'Предупреждение: ' + warning);
+                });
+            }
+        }
+        
+        // Переключение настроек изображений
+        function toggleImageSettings() {
+            const generateImages = document.getElementById('generate-images').checked;
+            const publishWithoutImages = document.getElementById('publish-without-images');
+            
+            if (!generateImages) {
+                publishWithoutImages.checked = true;
+                publishWithoutImages.disabled = true;
+            } else {
+                publishWithoutImages.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

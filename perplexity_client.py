@@ -17,10 +17,40 @@ from validation import is_content_fresh, get_date_feedback_for_next_prompt
 class PerplexityClient:
     """Клиент для работы с Perplexity API (модель Sonar Deep Research)"""
     
-    def __init__(self):
+    def __init__(self, web_config=None):
+        """
+        Инициализация клиента Perplexity
+        
+        Args:
+            web_config: Опциональная конфигурация из веб-интерфейса
+        """
         self.api_key = config.PERPLEXITY_API_KEY
         self.api_url = config.PERPLEXITY_API_URL
         self.timeout = config.REQUEST_TIMEOUT
+        
+        # Используем настройки из веб-конфига если они переданы
+        if web_config and 'api_models' in web_config:
+            perplexity_config = web_config['api_models'].get('perplexity', {})
+            self.model = perplexity_config.get('model', config.PERPLEXITY_MODEL)
+            self.max_tokens = perplexity_config.get('max_tokens', config.PERPLEXITY_MAX_TOKENS)
+            self.temperature = perplexity_config.get('temperature', 0.7)
+            self.top_p = perplexity_config.get('top_p', 0.9)
+            self.presence_penalty = perplexity_config.get('presence_penalty', 0.0)
+            self.frequency_penalty = perplexity_config.get('frequency_penalty', 0.0)
+            self.return_citations = perplexity_config.get('return_citations', True)
+            self.return_related_questions = perplexity_config.get('return_related_questions', False)
+            self.search_domain_filter = perplexity_config.get('search_domain_filter', [])
+        else:
+            # Дефолтные значения
+            self.model = config.PERPLEXITY_MODEL
+            self.max_tokens = config.PERPLEXITY_MAX_TOKENS
+            self.temperature = 0.7
+            self.top_p = 0.9
+            self.presence_penalty = 0.0
+            self.frequency_penalty = 0.0
+            self.return_citations = True
+            self.return_related_questions = False
+            self.search_domain_filter = []
         
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -166,7 +196,7 @@ class PerplexityClient:
             logger.info(f"Запрашиваю информацию о законодательных изменениях за {yesterday_date}")
             
             payload = {
-                "model": "sonar-deep-research",
+                "model": self.model,
                 "messages": [
                     {
                         "role": "system",
@@ -177,10 +207,18 @@ class PerplexityClient:
                         "content": prompt
                     }
                 ],
-                "max_tokens": PromptConfig.PERPLEXITY_MAX_TOKENS,
-                "temperature": PromptConfig.PERPLEXITY_TEMPERATURE,
-                "top_p": PromptConfig.PERPLEXITY_TOP_P
+                "max_tokens": self.max_tokens,
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                "presence_penalty": self.presence_penalty,
+                "frequency_penalty": self.frequency_penalty,
+                "return_citations": self.return_citations,
+                "return_related_questions": self.return_related_questions
             }
+            
+            # Добавляем фильтр доменов если есть
+            if self.search_domain_filter:
+                payload["search_domain_filter"] = self.search_domain_filter
             
             response = requests.post(
                 self.api_url,
@@ -241,14 +279,15 @@ class PerplexityClient:
         """
         try:
             test_payload = {
-                "model": "sonar-deep-research",
+                "model": self.model,
                 "messages": [
                     {
                         "role": "user",
                         "content": "Привет! Это тестовый запрос."
                     }
                 ],
-                "max_tokens": 50
+                "max_tokens": 50,
+                "temperature": self.temperature
             }
             
             response = requests.post(

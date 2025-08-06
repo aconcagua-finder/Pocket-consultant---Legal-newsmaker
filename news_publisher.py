@@ -20,13 +20,39 @@ from openai_client import OpenAIClient
 class NewsPublisher:
     """Публикатор новостей из сохраненных файлов"""
     
-    def __init__(self):
+    def __init__(self, web_config=None):
+        """
+        Инициализация публикатора новостей
+        
+        Args:
+            web_config: Опциональная конфигурация из веб-интерфейса
+        """
         self.telegram_client = TelegramClient()
-        self.openai_client = OpenAIClient()
+        self.openai_client = OpenAIClient(web_config)
         self.data_dir = Path(config.DATA_DIR)
+        
+        # Загружаем веб-конфиг если он не передан
+        if web_config is None:
+            web_config = self._load_web_config()
+        
+        self.web_config = web_config
+        
+        # Проверяем настройки публикации
+        self.publish_without_images = web_config.get('content', {}).get('publish_without_images', False) if web_config else False
         
         # Настройки публикации
         self.max_publication_attempts = 3
+    
+    def _load_web_config(self) -> Optional[Dict]:
+        """Загружает конфигурацию из веб-интерфейса"""
+        config_file = Path("config_web.json")
+        if config_file.exists():
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Ошибка загрузки веб-конфига: {e}")
+        return None
         
     def _get_news_file_path(self, date: datetime) -> Path:
         """
@@ -297,9 +323,21 @@ class NewsPublisher:
             # Форматируем для Telegram
             telegram_data = self._format_news_for_telegram(news_item)
             
-            # Загружаем готовое изображение
-            logger.info("📷 Загрузка готового изображения...")
-            comic_image = self._load_image_for_news(news_item)
+            # Проверяем, нужно ли загружать изображение
+            comic_image = None
+            skip_image = news_item.get('skip_image', False)
+            
+            if not skip_image:
+                # Пытаемся загрузить изображение
+                logger.info("📷 Загрузка готового изображения...")
+                comic_image = self._load_image_for_news(news_item)
+                
+                if not comic_image and not self.publish_without_images:
+                    # Если изображение не найдено и не разрешена публикация без изображений
+                    logger.error("❗ Изображение не найдено, а публикация без изображений запрещена")
+                    return False
+            else:
+                logger.info("✏️ Публикация без изображения (отключено в настройках)")
             
             # Публикуем
             logger.info("📱 Отправка в Telegram...")
@@ -308,7 +346,11 @@ class NewsPublisher:
                     telegram_data, comic_image
                 )
             else:
-                logger.warning("📷 Изображение недоступно, отправляю только текст")
+                # Отправляем только текст
+                if skip_image:
+                    logger.info("📨 Отправляю только текст (изображения отключены)")
+                else:
+                    logger.warning("📷 Изображение недоступно, отправляю только текст")
                 success = self.telegram_client.send_legal_update(telegram_data)
             
             if success:
