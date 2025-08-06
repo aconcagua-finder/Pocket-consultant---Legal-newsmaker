@@ -1,0 +1,64 @@
+{
+  "api_models": {
+    "openai": {
+      "model": "gpt-image-1",
+      "image_quality": "standard",
+      "image_style": "vivid",
+      "image_size": "1024x1024"
+    },
+    "perplexity": {
+      "model": "sonar-deep-research",
+      "max_tokens": 8192,
+      "temperature": 0.7
+    }
+  },
+  "content": {
+    "max_content_length": 1500,
+    "max_news_per_day": 7,
+    "min_content_length": 50,
+    "news_priorities": [
+      "КРИТИЧЕСКИ ВАЖНО",
+      "ОЧЕНЬ ВАЖНО",
+      "ВАЖНО",
+      "СРЕДНЯЯ ВАЖНОСТЬ",
+      "УМЕРЕННАЯ ВАЖНОСТЬ",
+      "ДОПОЛНИТЕЛЬНАЯ",
+      "НИЗКАЯ ВАЖНОСТЬ"
+    ],
+    "similarity_threshold": 0.7
+  },
+  "monitoring": {
+    "debug_mode": false,
+    "log_level": "INFO",
+    "test_mode": false
+  },
+  "retry": {
+    "exponential_backoff": true,
+    "max_retries": 3,
+    "retry_delay": 60
+  },
+  "schedule": {
+    "collection_time": "08:30",
+    "publication_times": [
+      "09:05",
+      "11:03",
+      "13:07",
+      "15:09",
+      "17:05",
+      "19:02",
+      "21:07"
+    ]
+  },
+  "storage": {
+    "data_dir": "data",
+    "logs_dir": "logs",
+    "max_history_days": 7,
+    "max_history_items": 15,
+    "max_news_files": 30
+  },
+  "telegram": {
+    "max_caption_length": 1024,
+    "max_message_length": 4096,
+    "parse_mode": "HTML"
+  }
+}

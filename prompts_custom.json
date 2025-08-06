@@ -1,0 +1,5 @@
+{
+  "perplexity_system": "You are an expert analyst specializing in current events and news. Respond concisely with specific facts and figures.",
+  "perplexity_collection": "Conduct a deep analysis and collect ALL significant changes in the topic for YESTERDAY.\n\nTASK: Find EXACTLY 7 most important news items from yesterday and rank them by priority.\n\nREQUIREMENTS FOR EACH ITEM:\n- Specific numbers: amounts, percentages, dates\n- Who is affected by the change\n- Practical effect for people/business\n- Exact date of implementation\n- Minimum 2-3 reliable sources",
+  "openai_comic": "Create a 4-panel visual story:\n\nCONTEXT: {context}\n\nSTYLE: Photorealistic, high quality\n\n4-PANEL LAYOUT:\nPanel 1: Discovery - Character learns about the news\nPanel 2: Reaction - Processing the information\nPanel 3: Understanding - Realizing implications\nPanel 4: Resolution - Adapting to the change"
+}

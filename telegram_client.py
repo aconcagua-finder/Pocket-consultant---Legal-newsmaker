@@ -344,7 +344,7 @@ class TelegramClient:
         # Возвращаем отформатированный контент
         return formatted_content
     
-    def _split_long_message(self, message: str, max_length: int = 4000) -> list[str]:
+    def _split_long_message(self, message: str, max_length: int = 4000) -> List[str]:
         """
         Разбивает длинное сообщение на части для Telegram
         

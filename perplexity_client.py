@@ -1,4 +1,4 @@
-import requests
+import requests  # Добавлен отсутствующий импорт
 import json
 import re
 from datetime import datetime, timedelta

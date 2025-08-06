@@ -123,8 +123,8 @@ class NewsFileStatus(TypedDict):
     error: Optional[str]
 
 
-class PublicationStatus(TypedDict):
-    """Статус публикаций за день"""
+class PublicationStatusReport(TypedDict):
+    """Статус публикаций за день (отчет)"""
     date: str
     file_exists: bool
     total_news: Optional[int]

@@ -8,6 +8,9 @@ News Collector для NEWSMAKER
 
 import json
 import os
+import asyncio
+import requests  # Добавлен отсутствующий импорт
+import time  # Добавлен импорт time в начало
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List
@@ -22,6 +25,12 @@ from prompts import (
     parse_collected_news,
     PromptConfig
 )
+from retry_handler import retry_with_exponential_backoff, PerplexityRetryHandler
+from cache_manager import cache_news_data, cache_api_response, cache_manager
+from async_handler import batch_generate_images, run_async
+from monitoring import monitor_performance, metrics_collector
+from file_utils import safe_json_write, safe_json_read, create_backup, FileLock
+from timezone_utils import now_msk, yesterday_msk, format_date_russian
 
 
 class NewsCollector:
@@ -36,6 +45,9 @@ class NewsCollector:
         # Создаем папку для изображений
         self.images_dir = self.data_dir / "images"
         self.images_dir.mkdir(exist_ok=True)
+        
+        # Инициализируем retry handler
+        self.perplexity_retry = PerplexityRetryHandler()
         
         # Настройки для сбора
         self.max_retries = 3
@@ -71,9 +83,10 @@ class NewsCollector:
         date_images_dir.mkdir(exist_ok=True)
         return date_images_dir / f"{news_id}.png"
     
-    def _generate_images_for_news(self, news_list: List[Dict], target_date: datetime) -> List[Dict]:
+    @monitor_performance("image_generation_batch")
+    async def _generate_images_async(self, news_list: List[Dict], target_date: datetime) -> List[Dict]:
         """
-        Генерирует изображения для всех новостей и добавляет информацию в данные новостей
+        Асинхронно генерирует изображения для всех новостей параллельно
         
         Args:
             news_list: Список новостей
@@ -82,71 +95,82 @@ class NewsCollector:
         Returns:
             List[Dict]: Обновленный список новостей с информацией об изображениях
         """
-        if not self.openai_client or not self.openai_client.client:
-            logger.warning("🎨 OpenAI клиент недоступен, пропускаем генерацию изображений")
-            return news_list
+        logger.info("🎨 Начинаем параллельную генерацию изображений...")
         
-        logger.info("🎨 Начинаем генерацию изображений для всех новостей...")
+        # Подготавливаем промпты для всех новостей
+        prompts = []
+        for news_item in news_list:
+            content = news_item.get('content', '')
+            prompts.append(content)
         
+        # Генерируем изображения параллельно (максимум 3 одновременно)
+        images = await batch_generate_images(prompts, max_concurrent=3)
+        
+        # Обновляем новости с изображениями
         updated_news_list = []
-        total_news = len(news_list)
+        successful_images = 0
         
-        for i, news_item in enumerate(news_list, 1):
+        for i, (news_item, image_bytes) in enumerate(zip(news_list, images), 1):
             news_id = news_item.get('id', f'news_{i}')
             title = news_item.get('title', 'Без названия')
-            content = news_item.get('content', '')
             
-            logger.info(f"🖼️ Генерация изображения {i}/{total_news}: {title[:50]}...")
-            
-            try:
-                # Генерируем изображение
-                image_bytes = self.openai_client.generate_comic_image(content)
-                
-                if image_bytes:
-                    # Сохраняем изображение в файл
+            if image_bytes:
+                try:
+                    # Сохраняем изображение
                     image_path = self._get_image_file_path(target_date, news_id)
                     
-                    with open(image_path, 'wb') as f:
-                        f.write(image_bytes)
+                    with FileLock(image_path):
+                        with open(image_path, 'wb') as f:
+                            f.write(image_bytes)
                     
                     # Относительный путь для JSON
                     relative_image_path = str(image_path.relative_to(Path.cwd()))
                     
-                    logger.info(f"✅ Изображение сохранено: {image_path.name}")
+                    logger.info(f"✅ Изображение {i}/{len(news_list)} сохранено: {image_path.name}")
                     
-                    # Добавляем информацию об изображении в новость
                     news_item.update({
                         'image_path': relative_image_path,
                         'image_generated': True,
                         'image_size': len(image_bytes)
                     })
-                else:
-                    logger.warning(f"⚠️ Не удалось сгенерировать изображение для: {title[:30]}...")
+                    successful_images += 1
+                    
+                    # Записываем метрику
+                    metrics_collector.counters['image_generation_success'] += 1
+                    
+                except Exception as e:
+                    logger.error(f"💥 Ошибка сохранения изображения {i}: {e}")
                     news_item.update({
                         'image_path': None,
                         'image_generated': False,
-                        'image_error': 'Генерация не удалась'
+                        'image_error': str(e)
                     })
-                    
-            except Exception as e:
-                logger.error(f"💥 Ошибка при генерации изображения для {title[:30]}...: {e}")
+                    metrics_collector.counters['image_generation_failed'] += 1
+            else:
+                logger.warning(f"⚠️ Не удалось сгенерировать изображение {i}")
                 news_item.update({
                     'image_path': None,
                     'image_generated': False,
-                    'image_error': str(e)
+                    'image_error': 'Генерация не удалась'
                 })
+                metrics_collector.counters['image_generation_failed'] += 1
             
             updated_news_list.append(news_item)
         
-        successful_images = sum(1 for news in updated_news_list if news.get('image_generated', False))
-        logger.info(f"🎉 Генерация завершена: {successful_images}/{total_news} изображений успешно")
+        logger.info(f"🎉 Генерация завершена: {successful_images}/{len(news_list)} изображений успешно")
         
         return updated_news_list
     
+    def _generate_images_for_news(self, news_list: List[Dict], target_date: datetime) -> List[Dict]:
+        """
+        Wrapper для обратной совместимости - вызывает асинхронную версию
+        """
+        return run_async(self._generate_images_async(news_list, target_date))
+    
     def _cleanup_old_files(self):
-        """Удаляет старые файлы новостей"""
+        """Удаляет старые файлы новостей и очищает кеш"""
         try:
-            cutoff_date = datetime.now() - timedelta(days=config.MAX_NEWS_FILES)
+            cutoff_date = now_msk() - timedelta(days=config.MAX_NEWS_FILES)
             
             for file_path in self.data_dir.glob("daily_news_*.json"):
                 try:
@@ -160,10 +184,16 @@ class NewsCollector:
                         
                 except (ValueError, OSError) as e:
                     logger.warning(f"Ошибка при обработке файла {file_path}: {e}")
+            
+            # Очищаем старый кеш
+            cache_manager.cleanup(max_age_days=7)
                     
         except Exception as e:
             logger.error(f"Ошибка при очистке старых файлов: {e}")
     
+    @monitor_performance("news_collection")
+    @retry_with_exponential_backoff(max_attempts=3)
+    @cache_api_response(ttl=300)  # Кешируем на 5 минут
     def _collect_raw_news(self) -> Optional[str]:
         """
         Собирает сырые новости через Perplexity Deep Research
@@ -194,24 +224,25 @@ class NewsCollector:
                 "top_p": PromptConfig.PERPLEXITY_TOP_P
             }
             
-            import requests
-            response = requests.post(
-                config.PERPLEXITY_API_URL,
+            # Используем retry handler для надежности
+            response = self.perplexity_retry.make_request(
+                url=config.PERPLEXITY_API_URL,
                 headers={
                     "Authorization": f"Bearer {config.PERPLEXITY_API_KEY}",
                     "Content-Type": "application/json"
                 },
-                json=payload,
+                json_data=payload,
                 timeout=config.REQUEST_TIMEOUT
             )
-            
-            response.raise_for_status()
             
             data = response.json()
             raw_content = data['choices'][0]['message']['content']
             
             logger.info("✅ Успешно получен ответ от Perplexity Deep Research")
             logger.info(f"📏 Размер ответа: {len(raw_content)} символов")
+            
+            # Записываем метрику
+            metrics_collector.counters['news_collection_success'] += 1
             
             return raw_content
             
@@ -223,8 +254,10 @@ class NewsCollector:
             return None
         except Exception as e:
             logger.error(f"💥 Неожиданная ошибка при сборе новостей: {e}")
+            metrics_collector.record_error('news_collection', str(e))
             return None
     
+    @cache_news_data(ttl=86400)  # Кешируем на 24 часа
     def _process_raw_content(self, raw_content: str) -> List[Dict]:
         """
         Обрабатывает сырой контент и извлекает структурированные новости
@@ -252,7 +285,7 @@ class NewsCollector:
             logger.info(f"📰 Извлечено {len(news_list)} новостей")
             
             # Добавляем метаданные к каждой новости
-            current_time = datetime.now()
+            current_time = now_msk()
             schedule = config.PUBLICATION_SCHEDULE
             
             for i, news_item in enumerate(news_list):
@@ -275,8 +308,10 @@ class NewsCollector:
             
         except Exception as e:
             logger.error(f"❌ Ошибка при обработке контента: {e}")
+            metrics_collector.record_error('content_processing', str(e))
             return []
     
+    @monitor_performance("save_news_file")
     def _save_news_to_file(self, news_list: List[Dict], date: datetime) -> bool:
         """
         Сохраняет новости в JSON файл
@@ -291,32 +326,39 @@ class NewsCollector:
         try:
             file_path = self._get_news_file_path(date)
             
+            # Создаем резервную копию если файл существует
+            if file_path.exists():
+                create_backup(file_path)
+            
             news_data = {
                 'date': date.strftime('%Y-%m-%d'),
-                'collected_at': datetime.now().isoformat(),
+                'collected_at': now_msk().isoformat(),
                 'total_news': len(news_list),
                 'news': news_list
             }
             
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(news_data, f, ensure_ascii=False, indent=2)
+            # Сохраняем с блокировкой
+            success = safe_json_write(file_path, news_data)
             
-            logger.info(f"💾 Новости сохранены в файл: {file_path.name}")
-            logger.info(f"📊 Статистика: {len(news_list)} новостей")
+            if success:
+                logger.info(f"💾 Новости сохранены в файл: {file_path.name}")
+                logger.info(f"📊 Статистика: {len(news_list)} новостей")
+                
+                # Выводим краткую сводку
+                for news in news_list:
+                    priority = news.get('priority', 0)
+                    title = news.get('title', 'Без названия')[:50]
+                    time = news.get('scheduled_time', 'Не назначено')
+                    logger.info(f"  📌 Приоритет {priority} ({time}): {title}...")
             
-            # Выводим краткую сводку
-            for news in news_list:
-                priority = news.get('priority', 0)
-                title = news.get('title', 'Без названия')[:50]
-                time = news.get('scheduled_time', 'Не назначено')
-                logger.info(f"  📌 Приоритет {priority} ({time}): {title}...")
-            
-            return True
+            return success
             
         except Exception as e:
             logger.error(f"💾 Ошибка при сохранении файла: {e}")
+            metrics_collector.record_error('file_save', str(e))
             return False
     
+    @monitor_performance("daily_collection")
     def collect_daily_news(self, target_date: Optional[datetime] = None) -> bool:
         """
         Выполняет полный цикл сбора новостей за указанную дату
@@ -328,18 +370,23 @@ class NewsCollector:
             bool: True если сбор прошел успешно
         """
         if target_date is None:
-            target_date = datetime.now() - timedelta(days=1)  # Вчера
+            target_date = yesterday_msk()
         
         logger.info("=" * 60)
-        logger.info(f"🚀 Запуск сбора новостей за {target_date.strftime('%d.%m.%Y')}")
+        logger.info(f"🚀 Запуск сбора новостей за {format_date_russian(target_date)}")
+        logger.info(f"📊 Системное здоровье: {metrics_collector.collect_system_metrics().cpu_percent:.1f}% CPU")
         logger.info("=" * 60)
         
         # Проверяем, не собирали ли уже новости за эту дату
         file_path = self._get_news_file_path(target_date)
         if file_path.exists():
             logger.warning(f"⚠️ Файл новостей уже существует: {file_path.name}")
-            logger.info("Для пересбора удалите файл вручную")
-            return False
+            
+            # Проверяем кеш
+            cached_data = safe_json_read(file_path)
+            if cached_data and cached_data.get('total_news', 0) > 0:
+                logger.info("📦 Используем существующие новости из файла")
+                return True
         
         # Очищаем старые файлы
         self._cleanup_old_files()
@@ -353,7 +400,6 @@ class NewsCollector:
             if not raw_content:
                 if attempt < self.max_retries:
                     logger.info(f"⏱️ Ожидание {self.retry_delay} секунд перед следующей попыткой...")
-                    import time
                     time.sleep(self.retry_delay)
                 continue
             
@@ -363,27 +409,34 @@ class NewsCollector:
                 logger.warning("📰 Не удалось извлечь новости из ответа")
                 if attempt < self.max_retries:
                     logger.info(f"⏱️ Ожидание {self.retry_delay} секунд перед следующей попыткой...")
-                    import time
                     time.sleep(self.retry_delay)
                 continue
             
-            # Генерируем изображения для всех новостей
-            logger.info("🎨 Переходим к генерации изображений...")
+            # Генерируем изображения параллельно для всех новостей
+            logger.info("🎨 Переходим к параллельной генерации изображений...")
             news_list_with_images = self._generate_images_for_news(news_list, target_date)
             
             # Сохраняем в файл
             if self._save_news_to_file(news_list_with_images, target_date):
                 logger.info("🎉 Сбор новостей завершен успешно!")
+                
+                # Сохраняем метрики
+                metrics_collector.save_metrics()
+                
+                # Генерируем статистику
+                stats = metrics_collector.generate_daily_stats()
+                logger.info(f"📊 Статистика дня: {stats.news_collected} новостей собрано")
+                
                 logger.info("=" * 60)
                 return True
             else:
                 logger.error("💾 Ошибка при сохранении файла")
                 if attempt < self.max_retries:
-                    import time
                     time.sleep(self.retry_delay)
                 continue
         
         logger.error("❌ Все попытки сбора исчерпаны")
+        metrics_collector.counters['news_collection_failed'] += 1
         logger.info("=" * 60)
         return False
     
@@ -398,7 +451,7 @@ class NewsCollector:
             Dict: Информация о статусе файла
         """
         if date is None:
-            date = datetime.now() - timedelta(days=1)
+            date = yesterday_msk()
         
         file_path = self._get_news_file_path(date)
         
@@ -410,18 +463,25 @@ class NewsCollector:
             }
         
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+            data = safe_json_read(file_path)
             
-            return {
-                'exists': True,
-                'date': date.strftime('%Y-%m-%d'),
-                'file_path': str(file_path),
-                'collected_at': data.get('collected_at'),
-                'total_news': data.get('total_news', 0),
-                'news_count': len(data.get('news', [])),
-                'published_count': sum(1 for news in data.get('news', []) if news.get('published', False))
-            }
+            if data:
+                return {
+                    'exists': True,
+                    'date': date.strftime('%Y-%m-%d'),
+                    'file_path': str(file_path),
+                    'collected_at': data.get('collected_at'),
+                    'total_news': data.get('total_news', 0),
+                    'news_count': len(data.get('news', [])),
+                    'published_count': sum(1 for news in data.get('news', []) if news.get('published', False))
+                }
+            else:
+                return {
+                    'exists': True,
+                    'date': date.strftime('%Y-%m-%d'),
+                    'file_path': str(file_path),
+                    'error': 'Не удалось прочитать файл'
+                }
             
         except Exception as e:
             logger.error(f"Ошибка при чтении файла {file_path}: {e}")
@@ -446,6 +506,10 @@ def main():
         # Показываем статус
         status = collector.get_news_file_status()
         logger.info(f"📊 Статус: {status}")
+        
+        # Показываем метрики
+        summary = metrics_collector.get_summary()
+        logger.info(f"📈 Метрики: {summary}")
     else:
         logger.error("❌ Тест не прошел")
 

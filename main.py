@@ -332,7 +332,7 @@ def main():
             collect_news_mode()
             sys.exit(0)
             
-        elif getattr(args, 'publish_next', False):
+        elif args.publish_next:
             publish_next_mode()
             sys.exit(0)
             
@@ -343,7 +343,7 @@ def main():
             force_publish_mode(args.force_publish)
             sys.exit(0)
             
-        elif getattr(args, 'test_publish_all', False):
+        elif args.test_publish_all:
             test_publish_all_mode()
             sys.exit(0)
             

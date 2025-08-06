@@ -72,7 +72,7 @@ class OpenAIClient:
             logger.debug(f"Промпт: {prompt[:100]}...")
             
             response = self.client.images.generate(
-                model="gpt-image-1",
+                model=config.OPENAI_IMAGE_MODEL,  # Используем модель из конфига
                 prompt=prompt,
                 size=PromptConfig.OPENAI_IMAGE_SIZE,
                 quality=PromptConfig.OPENAI_IMAGE_QUALITY,
@@ -114,7 +114,7 @@ class OpenAIClient:
         try:
             # Пробуем сгенерировать простое изображение
             response = self.client.images.generate(
-                model="gpt-image-1",
+                model=config.OPENAI_IMAGE_MODEL,  # Используем модель из конфига
                 prompt=get_openai_test_prompt(),
                 size=PromptConfig.OPENAI_IMAGE_SIZE,
                 quality=PromptConfig.OPENAI_IMAGE_QUALITY,

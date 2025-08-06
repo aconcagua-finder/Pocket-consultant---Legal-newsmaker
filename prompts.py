@@ -8,6 +8,19 @@
 """
 
 from datetime import datetime, timedelta
+from loguru import logger
+
+# Пытаемся загрузить кастомные промпты из веб-интерфейса
+CUSTOM_PROMPTS = {}
+try:
+    from config_integration import CUSTOM_PROMPTS as WEB_PROMPTS
+    if WEB_PROMPTS:
+        CUSTOM_PROMPTS = WEB_PROMPTS
+        logger.info(f"✅ Загружены кастомные промпты из веб-интерфейса")
+except ImportError:
+    pass
+except Exception as e:
+    logger.warning(f"⚠️ Не удалось загрузить кастомные промпты: {e}")
 
 
 def get_yesterday_date() -> str:
@@ -30,6 +43,10 @@ def get_yesterday_date() -> str:
 
 def get_perplexity_system_prompt() -> str:
     """Системный промпт для Perplexity AI"""
+    # Используем кастомный промпт если он есть
+    if 'PERPLEXITY_SYSTEM_PROMPT' in CUSTOM_PROMPTS:
+        return CUSTOM_PROMPTS['PERPLEXITY_SYSTEM_PROMPT']
+    
     return ("Ты опытный юрист-практик, специализирующийся на актуальных изменениях "
             "законодательства. Отвечай кратко, по существу, с конкретными фактами и цифрами. "
             "КРИТИЧЕСКИ ВАЖНО: ищи только самые свежие новости за последние дни, проверяй даты в источниках! "
@@ -38,6 +55,10 @@ def get_perplexity_system_prompt() -> str:
 
 def get_perplexity_daily_collection_prompt() -> str:
     """Промпт для ежедневного сбора множества законодательных новостей"""
+    
+    # Используем кастомный промпт если он есть
+    if 'PERPLEXITY_COLLECTION_PROMPT' in CUSTOM_PROMPTS:
+        return CUSTOM_PROMPTS['PERPLEXITY_COLLECTION_PROMPT']
     
     return f"""Проведи глубокий анализ и собери ВСЕ значимые изменения в российском законодательстве за ВЧЕРА.
 
@@ -186,6 +207,12 @@ def get_openai_comic_styles() -> list:
 
 def get_openai_comic_prompt(context: str, chosen_style: str) -> str:
     """Создает промпт для генерации 4-панельного комикса на основе новостей"""
+    
+    # Используем кастомный промпт если он есть
+    if 'OPENAI_COMIC_PROMPT' in CUSTOM_PROMPTS:
+        base_prompt = CUSTOM_PROMPTS['OPENAI_COMIC_PROMPT']
+        # Заменяем placeholder для контекста если есть
+        return base_prompt.replace('{context}', context) if '{context}' in base_prompt else f"{base_prompt}\n\nCONTEXT: {context}"
     
     return f"""Create a 4-panel comic strip about Russian legal news:
 
