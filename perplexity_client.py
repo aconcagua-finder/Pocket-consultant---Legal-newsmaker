@@ -11,7 +11,7 @@ from prompts import (
     get_perplexity_news_prompt,
     PromptConfig
 )
-from date_validator import is_content_fresh, get_date_feedback_for_next_prompt
+from validation import is_content_fresh, get_date_feedback_for_next_prompt
 
 
 class PerplexityClient:

@@ -13,12 +13,17 @@ from pathlib import Path
 
 # Настройка логирования должна быть первой
 from logger_setup import setup_logger, log_startup_banner, log_system_info, get_log_stats
-from scheduler import NewsmakerScheduler
+
+# Импорты компонентов системы
 from perplexity_client import PerplexityClient
 from telegram_client import TelegramClient
 from news_collector import NewsCollector
 from news_publisher import NewsPublisher
-from news_scheduler import NewsmakerScheduler as NewNewsmakerScheduler
+
+# Импорт планировщиков - используем wrapper для совместимости
+from scheduler import NewsmakerScheduler  # Это wrapper с автовыбором архитектуры
+from news_scheduler import NewsmakerScheduler as DirectNewsScheduler  # Прямой доступ к новому планировщику
+
 import config
 
 # Инициализируем логирование

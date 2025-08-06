@@ -15,6 +15,8 @@ from telegram.request import HTTPXRequest
 from difflib import SequenceMatcher
 
 import config
+from file_utils import safe_json_read, safe_json_write  # Используем безопасные операции с файлами
+from types_models import TelegramMessage, MessageHistoryItem  # Используем типизацию
 
 
 class TelegramClient:
@@ -64,56 +66,46 @@ class TelegramClient:
         cleaned = self._clean_content_for_comparison(content)
         return hashlib.sha256(cleaned.encode('utf-8')).hexdigest()
     
-    def _load_message_history(self) -> List[Dict]:
+    def _load_message_history(self) -> List[MessageHistoryItem]:
         """
-        Загружает историю сообщений из файла
+        Загружает историю сообщений из файла с блокировкой
         
         Returns:
-            List[Dict]: Список сообщений с хешами и временными метками
+            List[MessageHistoryItem]: Список сообщений с хешами и временными метками
         """
-        try:
-            if self.history_file.exists():
-                with open(self.history_file, 'r', encoding='utf-8') as f:
-                    history = json.load(f)
-                    logger.debug(f"Загружена история из {len(history)} сообщений")
-                    return history
-            return []
-        except Exception as e:
-            logger.error(f"Ошибка при загрузке истории сообщений: {e}")
-            return []
+        history = safe_json_read(self.history_file, default=[])
+        if history:
+            logger.debug(f"Загружена история из {len(history)} сообщений")
+        return history
     
     def _save_message_to_history(self, content: str) -> None:
         """
-        Сохраняет новое сообщение в историю
+        Сохраняет новое сообщение в историю с блокировкой файла
         
         Args:
             content: Контент сообщения для сохранения
         """
-        try:
-            # Загружаем существующую историю
-            history = self._load_message_history()
-            
-            # Создаем запись о новом сообщении
-            message_record = {
-                'hash': self._get_content_hash(content),
-                'timestamp': datetime.now().isoformat(),
-                'preview': self._clean_content_for_comparison(content)[:100]  # Первые 100 символов для отладки
-            }
-            
-            # Добавляем в начало списка (новые сообщения первыми)
-            history.insert(0, message_record)
-            
-            # Очищаем старые записи
-            history = self._cleanup_history(history)
-            
-            # Сохраняем обновленную историю
-            with open(self.history_file, 'w', encoding='utf-8') as f:
-                json.dump(history, f, ensure_ascii=False, indent=2)
-                
+        # Загружаем существующую историю
+        history = self._load_message_history()
+        
+        # Создаем запись о новом сообщении
+        message_record = MessageHistoryItem(
+            hash=self._get_content_hash(content),
+            timestamp=datetime.now().isoformat(),
+            preview=self._clean_content_for_comparison(content)[:100]
+        )
+        
+        # Добавляем в начало списка (новые сообщения первыми)
+        history.insert(0, message_record)
+        
+        # Очищаем старые записи
+        history = self._cleanup_history(history)
+        
+        # Сохраняем обновленную историю с блокировкой
+        if safe_json_write(self.history_file, history):
             logger.debug(f"Сообщение сохранено в историю. Всего записей: {len(history)}")
-            
-        except Exception as e:
-            logger.error(f"Ошибка при сохранении сообщения в историю: {e}")
+        else:
+            logger.error("Не удалось сохранить сообщение в историю")
     
     def _cleanup_history(self, history: List[Dict]) -> List[Dict]:
         """
@@ -565,7 +557,7 @@ class TelegramClient:
             logger.error(f"Неожиданная ошибка при отправке с изображением: {e}")
             return False
 
-    def send_legal_update(self, content: dict) -> bool:
+    def send_legal_update(self, content: TelegramMessage) -> bool:
         """
         Синхронная обёртка для отправки законодательных обновлений
         
@@ -575,42 +567,9 @@ class TelegramClient:
         Returns:
             bool: True если отправка прошла успешно
         """
-        try:
-            # Проверяем, есть ли уже запущенный event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # Если loop уже запущен, создаем задачу
-                import threading
-                result = [False]
-                
-                def run_in_thread():
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
-                    try:
-                        result[0] = new_loop.run_until_complete(self.send_message(content))
-                    finally:
-                        new_loop.close()
-                
-                thread = threading.Thread(target=run_in_thread)
-                thread.start()
-                thread.join()
-                return result[0]
-                
-            except RuntimeError:
-                # Нет запущенного loop, можем создать новый
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    result = loop.run_until_complete(self.send_message(content))
-                    return result
-                finally:
-                    loop.close()
-                    
-        except Exception as e:
-            logger.error(f"Ошибка в синхронной обёртке отправки: {e}")
-            return False
+        return asyncio.run(self.send_message(content))
     
-    def send_legal_update_with_comic(self, content: dict, image_bytes: bytes) -> bool:
+    def send_legal_update_with_comic(self, content: TelegramMessage, image_bytes: bytes) -> bool:
         """
         Синхронная обёртка для отправки законодательных обновлений с комиксом
         
@@ -621,39 +580,6 @@ class TelegramClient:
         Returns:
             bool: True если отправка прошла успешно
         """
-        try:
-            # Проверяем, есть ли уже запущенный event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # Если loop уже запущен, создаем задачу в отдельном потоке
-                import threading
-                result = [False]
-                
-                def run_in_thread():
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
-                    try:
-                        result[0] = new_loop.run_until_complete(self.send_message_with_image(content, image_bytes))
-                    finally:
-                        new_loop.close()
-                
-                thread = threading.Thread(target=run_in_thread)
-                thread.start()
-                thread.join()
-                return result[0]
-                
-            except RuntimeError:
-                # Нет запущенного loop, можем создать новый
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    result = loop.run_until_complete(self.send_message_with_image(content, image_bytes))
-                    return result
-                finally:
-                    loop.close()
-                    
-        except Exception as e:
-            logger.error(f"Ошибка в синхронной обёртке отправки с комиксом: {e}")
-            return False
+        return asyncio.run(self.send_message_with_image(content, image_bytes))
 
  
