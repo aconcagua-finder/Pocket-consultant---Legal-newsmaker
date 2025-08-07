@@ -32,7 +32,18 @@ class PerplexityClient:
         if web_config and 'api_models' in web_config:
             perplexity_config = web_config['api_models'].get('perplexity', {})
             self.model = perplexity_config.get('model', config.PERPLEXITY_MODEL)
-            self.max_tokens = perplexity_config.get('max_tokens', config.PERPLEXITY_MAX_TOKENS)
+            
+            # Автоматическая корректировка max_tokens в зависимости от модели
+            max_tokens_limits = perplexity_config.get('max_tokens_limits', {})
+            if self.model in max_tokens_limits:
+                max_allowed = max_tokens_limits[self.model]
+                requested = perplexity_config.get('max_tokens', config.PERPLEXITY_MAX_TOKENS)
+                self.max_tokens = min(requested, max_allowed)
+                if requested > max_allowed:
+                    logger.warning(f"Запрошено {requested} токенов для {self.model}, но лимит {max_allowed}. Используем {self.max_tokens}")
+            else:
+                self.max_tokens = perplexity_config.get('max_tokens', config.PERPLEXITY_MAX_TOKENS)
+            
             self.temperature = perplexity_config.get('temperature', 0.7)
             self.top_p = perplexity_config.get('top_p', 0.9)
             self.presence_penalty = perplexity_config.get('presence_penalty', 0.0)
@@ -40,6 +51,16 @@ class PerplexityClient:
             self.return_citations = perplexity_config.get('return_citations', True)
             self.return_related_questions = perplexity_config.get('return_related_questions', False)
             self.search_domain_filter = perplexity_config.get('search_domain_filter', [])
+            
+            # Новые параметры для глубокого поиска
+            self.search_recency_filter = perplexity_config.get('search_recency_filter', None)
+            self.search_depth = perplexity_config.get('search_depth', 'high')
+            self.search_after_date_filter = perplexity_config.get('search_after_date_filter', None)
+            self.search_before_date_filter = perplexity_config.get('search_before_date_filter', None)
+            self.web_search_options = perplexity_config.get('web_search_options', {
+                'search_context_size': 'high',
+                'enable_deep_search': True
+            })
         else:
             # Дефолтные значения
             self.model = config.PERPLEXITY_MODEL
@@ -51,6 +72,14 @@ class PerplexityClient:
             self.return_citations = True
             self.return_related_questions = False
             self.search_domain_filter = []
+            self.search_recency_filter = None
+            self.search_depth = 'high'
+            self.search_after_date_filter = None
+            self.search_before_date_filter = None
+            self.web_search_options = {
+                'search_context_size': 'high',
+                'enable_deep_search': True
+            }
         
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -220,6 +249,27 @@ class PerplexityClient:
             if self.search_domain_filter:
                 payload["search_domain_filter"] = self.search_domain_filter
             
+            # Добавляем новые параметры поиска если заданы
+            if self.search_recency_filter:
+                payload["search_recency_filter"] = self.search_recency_filter
+                logger.debug(f"Применяю фильтр свежести: {self.search_recency_filter}")
+            
+            if self.search_after_date_filter:
+                payload["search_after_date_filter"] = self.search_after_date_filter
+                logger.debug(f"Ищу контент после: {self.search_after_date_filter}")
+            
+            if self.search_before_date_filter:
+                payload["search_before_date_filter"] = self.search_before_date_filter
+                logger.debug(f"Ищу контент до: {self.search_before_date_filter}")
+            
+            # Добавляем расширенные опции поиска для deep research
+            if 'deep-research' in self.model.lower() and self.web_search_options:
+                if self.web_search_options.get('search_context_size'):
+                    payload["search_context_size"] = self.web_search_options['search_context_size']
+                if self.web_search_options.get('enable_deep_search'):
+                    payload["enable_deep_search"] = self.web_search_options['enable_deep_search']
+                logger.info(f"Deep Research режим с контекстом: {self.web_search_options.get('search_context_size', 'default')}")
+            
             response = requests.post(
                 self.api_url,
                 headers=self.headers,
@@ -233,7 +283,7 @@ class PerplexityClient:
             raw_content = data['choices'][0]['message']['content']
             
             logger.info("Успешно получен ответ от Perplexity API")
-            logger.info(f"Полный ответ от AI:\n{raw_content}\n---")
+            logger.debug(f"Ответ получен (первые 200 символов): {raw_content[:200]}...")
             
             # Очищаем от тегов рассуждений Deep Research
             cleaned_content = self._clean_deep_research_content(raw_content)
@@ -287,7 +337,8 @@ class PerplexityClient:
                     }
                 ],
                 "max_tokens": 50,
-                "temperature": self.temperature
+                "temperature": self.temperature,
+                "return_citations": False  # Отключаем для теста
             }
             
             response = requests.post(

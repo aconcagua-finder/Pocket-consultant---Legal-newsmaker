@@ -350,6 +350,102 @@
                 width: 100%;
             }
         }
+        
+        /* Tooltips */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .tooltip-icon {
+            color: #3b82f6;
+            cursor: help;
+            font-size: 14px;
+        }
+        
+        .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: var(--dark);
+            color: white;
+            text-align: left;
+            border-radius: 8px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.4;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--dark) transparent transparent transparent;
+        }
+        
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Dynamic fields */
+        .dynamic-field {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .dynamic-field.active {
+            display: block;
+        }
+        
+        /* Price indicator */
+        .price-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--success);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        
+        .price-indicator.warning {
+            background: var(--warning);
+        }
+        
+        .price-indicator.danger {
+            background: var(--danger);
+        }
+        
+        /* Token limit indicator */
+        .token-limit {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -421,8 +517,19 @@
                     <h3><i class="fas fa-brain"></i> Perplexity API</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Модель</label>
-                            <select id="perplexity-model">
+                            <label>Модель
+                                <span class="tooltip-container">
+                                    <i class="fas fa-question-circle tooltip-icon"></i>
+                                    <span class="tooltip-text">
+                                        <strong>Доступные модели:</strong><br>
+                                        • <b>sonar</b> - базовая модель (4K токенов)<br>
+                                        • <b>sonar-pro</b> - расширенная (8K токенов)<br>
+                                        • <b>sonar-reasoning</b> - с логическим выводом (8K)<br>
+                                        • <b>sonar-deep-research</b> - глубокий анализ 100+ источников (16K токенов)
+                                    </span>
+                                </span>
+                            </label>
+                            <select id="perplexity-model" onchange="updatePerplexityFields()">
                                 <option value="sonar">Sonar</option>
                                 <option value="sonar-pro">Sonar Pro</option>
                                 <option value="sonar-reasoning">Sonar Reasoning</option>
@@ -432,9 +539,17 @@
                             <div class="help-text">Deep Research лучше для комплексного анализа</div>
                         </div>
                         <div class="form-group">
-                            <label>Max Tokens</label>
-                            <input type="number" id="perplexity-max-tokens" value="8192" min="1" max="200000">
-                            <div class="help-text">Максимальная длина ответа (до 200K для Sonar Pro)</div>
+                            <label>Max Tokens
+                                <span class="tooltip-container">
+                                    <i class="fas fa-question-circle tooltip-icon"></i>
+                                    <span class="tooltip-text">
+                                        Максимальная длина ответа. Лимиты зависят от модели и автоматически корректируются.
+                                    </span>
+                                </span>
+                                <span id="token-limit-indicator" class="token-limit">Лимит: 16384</span>
+                            </label>
+                            <input type="number" id="perplexity-max-tokens" value="8192" min="1" max="16384">
+                            <div class="help-text">Максимальная длина ответа</div>
                         </div>
                     </div>
                     <div class="form-row">
@@ -462,10 +577,62 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Фильтр доменов (один на строку)</label>
-                        <textarea id="perplexity-domains" rows="3" placeholder="example.com&#10;news.com"></textarea>
+                        <label>Фильтр доменов (один на строку)
+                            <span class="tooltip-container">
+                                <i class="fas fa-question-circle tooltip-icon"></i>
+                                <span class="tooltip-text">
+                                    Включить или исключить домены.<br>
+                                    Примеры:<br>
+                                    • github.com - включить<br>
+                                    • -quora.com - исключить
+                                </span>
+                            </span>
+                        </label>
+                        <textarea id="perplexity-domains" rows="3" placeholder="sozd.duma.gov.ru&#10;government.ru&#10;-wikipedia.org"></textarea>
                         <div class="help-text">Ограничить поиск определенными доменами</div>
                     </div>
+                    
+                    <!-- Новые поля для Deep Research -->
+                    <div id="deep-research-fields" class="dynamic-field active">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Глубина поиска
+                                    <span class="tooltip-container">
+                                        <i class="fas fa-question-circle tooltip-icon"></i>
+                                        <span class="tooltip-text">
+                                            Определяет количество источников для анализа:<br>
+                                            • <b>Low</b> - быстрый поиск (10-20 источников)<br>
+                                            • <b>Medium</b> - стандартный (30-50 источников)<br>
+                                            • <b>High</b> - глубокий анализ (100+ источников)
+                                        </span>
+                                    </span>
+                                </label>
+                                <select id="search-depth">
+                                    <option value="low">Low (быстрый)</option>
+                                    <option value="medium">Medium (стандартный)</option>
+                                    <option value="high" selected>High (глубокий)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Фильтр свежести
+                                    <span class="tooltip-container">
+                                        <i class="fas fa-question-circle tooltip-icon"></i>
+                                        <span class="tooltip-text">
+                                            Ограничивает поиск по времени публикации контента
+                                        </span>
+                                    </span>
+                                </label>
+                                <select id="search-recency">
+                                    <option value="">Без ограничений</option>
+                                    <option value="hour">Последний час</option>
+                                    <option value="day" selected>Последний день</option>
+                                    <option value="week">Последняя неделя</option>
+                                    <option value="month">Последний месяц</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="checkbox-group">
                         <input type="checkbox" id="perplexity-citations" checked>
                         <label for="perplexity-citations">Возвращать источники</label>
@@ -497,15 +664,35 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Качество</label>
-                            <select id="openai-quality">
+                            <label>Качество
+                                <span class="tooltip-container">
+                                    <i class="fas fa-question-circle tooltip-icon"></i>
+                                    <span class="tooltip-text">
+                                        Влияет на детализацию и цену изображения:<br>
+                                        • <b>DALL-E 2</b>: только standard<br>
+                                        • <b>DALL-E 3</b>: standard ($0.04) или HD ($0.08-$0.12)<br>
+                                        • <b>GPT-Image-1</b>: low ($0.02), medium ($0.07), high ($0.19)
+                                    </span>
+                                </span>
+                                <span id="price-indicator" class="price-indicator">$0.04</span>
+                            </label>
+                            <select id="openai-quality" onchange="updateOpenAIPrice()">
                                 <option value="standard">Standard</option>
                                 <option value="hd">HD (DALL-E 3)</option>
                             </select>
                             <div class="help-text">HD - лучше детализация, но дороже</div>
                         </div>
-                        <div class="form-group">
-                            <label>Стиль</label>
+                        <div class="form-group" id="style-field">
+                            <label>Стиль
+                                <span class="tooltip-container">
+                                    <i class="fas fa-question-circle tooltip-icon"></i>
+                                    <span class="tooltip-text">
+                                        <b>Vivid</b> - яркие, насыщенные цвета<br>
+                                        <b>Natural</b> - естественные, реалистичные тона<br>
+                                        (Только для DALL-E 3)
+                                    </span>
+                                </span>
+                            </label>
                             <select id="openai-style">
                                 <option value="vivid">Vivid (яркий)</option>
                                 <option value="natural">Natural (естественный)</option>
@@ -671,6 +858,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadConfiguration();
             setupEventListeners();
+            // Инициализация динамических полей
+            updatePerplexityFields();
+            updateOpenAIOptions();
+            updateOpenAIPrice();
         });
         
         // Настройка обработчиков событий
@@ -839,6 +1030,78 @@
             }
         }
         
+        // Обновление полей Perplexity в зависимости от модели
+        function updatePerplexityFields() {
+            const model = document.getElementById('perplexity-model').value;
+            const maxTokensInput = document.getElementById('perplexity-max-tokens');
+            const tokenLimitIndicator = document.getElementById('token-limit-indicator');
+            const deepResearchFields = document.getElementById('deep-research-fields');
+            
+            // Лимиты токенов для каждой модели
+            const tokenLimits = {
+                'sonar': 4096,
+                'sonar-pro': 8192,
+                'sonar-reasoning': 8192,
+                'sonar-reasoning-pro': 12000,
+                'sonar-deep-research': 16384
+            };
+            
+            const limit = tokenLimits[model] || 8192;
+            maxTokensInput.max = limit;
+            if (parseInt(maxTokensInput.value) > limit) {
+                maxTokensInput.value = limit;
+            }
+            tokenLimitIndicator.textContent = `Лимит: ${limit}`;
+            
+            // Показываем/скрываем поля Deep Research
+            if (model === 'sonar-deep-research') {
+                deepResearchFields.classList.add('active');
+            } else {
+                deepResearchFields.classList.remove('active');
+            }
+        }
+        
+        // Обновление цены OpenAI
+        function updateOpenAIPrice() {
+            const model = document.getElementById('openai-model').value;
+            const quality = document.getElementById('openai-quality').value;
+            const size = document.getElementById('openai-size').value;
+            const priceIndicator = document.getElementById('price-indicator');
+            
+            // Цены для разных моделей
+            const prices = {
+                'dall-e-2': {
+                    'standard': { '256x256': 0.016, '512x512': 0.018, '1024x1024': 0.020 }
+                },
+                'dall-e-3': {
+                    'standard': { '1024x1024': 0.040, '1024x1792': 0.080, '1792x1024': 0.080 },
+                    'hd': { '1024x1024': 0.080, '1024x1792': 0.120, '1792x1024': 0.120 }
+                },
+                'gpt-image-1': {
+                    'low': 0.02,
+                    'medium': 0.07,
+                    'high': 0.19
+                }
+            };
+            
+            let price = 0;
+            if (model === 'gpt-image-1') {
+                price = prices[model][quality] || 0.19;
+            } else if (prices[model] && prices[model][quality]) {
+                price = prices[model][quality][size] || 0;
+            }
+            
+            priceIndicator.textContent = `$${price.toFixed(3)}`;
+            
+            // Меняем цвет в зависимости от цены
+            priceIndicator.className = 'price-indicator';
+            if (price > 0.1) {
+                priceIndicator.classList.add('danger');
+            } else if (price > 0.05) {
+                priceIndicator.classList.add('warning');
+            }
+        }
+        
         // Сохранение конфигурации
         async function saveConfiguration() {
             try {
@@ -854,6 +1117,8 @@
                             frequency_penalty: parseFloat(document.getElementById('perplexity-frequency-penalty').value),
                             return_citations: document.getElementById('perplexity-citations').checked,
                             search_domain_filter: document.getElementById('perplexity-domains').value.split('\n').filter(d => d.trim()),
+                            search_recency_filter: document.getElementById('search-recency') ? document.getElementById('search-recency').value || null : null,
+                            search_depth: document.getElementById('search-depth') ? document.getElementById('search-depth').value : 'high',
                             timeout: 300
                         },
                         openai: {

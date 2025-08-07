@@ -37,12 +37,35 @@ class OpenAIClient:
         if web_config and 'api_models' in web_config:
             openai_config = web_config['api_models'].get('openai', {})
             self.model = openai_config.get('model', 'dall-e-3')
+            
+            # Корректируем параметры в зависимости от модели
             self.image_quality = openai_config.get('image_quality', 'standard')
             self.image_style = openai_config.get('image_style', 'vivid')
             self.image_size = openai_config.get('image_size', '1024x1024')
             self.response_format = openai_config.get('response_format', 'url')
             self.n_images = openai_config.get('n_images', 1)
             self.moderation = openai_config.get('moderation', 'auto')  # Для gpt-image-1
+            
+            # Корректируем response_format для gpt-image-1
+            if self.model == 'gpt-image-1':
+                self.response_format = 'b64_json'  # GPT-Image-1 всегда возвращает base64
+                logger.info("GPT-Image-1 выбрана, используем response_format='b64_json'")
+            
+            # Проверяем ограничения n_images
+            n_images_limits = openai_config.get('n_images_limits', {})
+            if self.model in n_images_limits:
+                max_allowed = n_images_limits[self.model]
+                if self.n_images > max_allowed:
+                    logger.warning(f"{self.model} поддерживает максимум {max_allowed} изображений, используем {max_allowed}")
+                    self.n_images = max_allowed
+            
+            # Логируем цену если есть информация
+            pricing = openai_config.get('pricing', {})
+            if self.model in pricing:
+                model_price = pricing[self.model]
+                if self.model == 'gpt-image-1':
+                    price = model_price.get(self.image_quality, 0.19)
+                    logger.info(f"GPT-Image-1 с качеством '{self.image_quality}': ${price} за изображение")
         else:
             # Дефолтные значения
             self.model = 'dall-e-3'
@@ -113,28 +136,44 @@ class OpenAIClient:
                 if self.image_style:  # vivid или natural
                     params["style"] = self.image_style
             elif self.model == 'gpt-image-1':
-                # gpt-image-1 использует quality по-другому
-                quality_map = {'low': 'low', 'medium': 'medium', 'high': 'high'}
-                params["quality"] = quality_map.get(self.image_quality, 'high')
+                # gpt-image-1 использует quality по-другому и НЕ поддерживает style
+                # Проверяем, что quality в правильном формате
+                if self.image_quality in ['low', 'medium', 'high']:
+                    params["quality"] = self.image_quality
+                else:
+                    # Конвертируем из формата DALL-E 3
+                    quality_map = {'standard': 'medium', 'hd': 'high'}
+                    params["quality"] = quality_map.get(self.image_quality, 'high')
+                    logger.info(f"Конвертировал quality '{self.image_quality}' в '{params['quality']}' для gpt-image-1")
+                
                 # Добавляем moderation для gpt-image-1
                 params["moderation"] = self.moderation
+                
+                # GPT-Image-1 не поддерживает style, убираем если есть
+                if "style" in params:
+                    del params["style"]
+                    logger.debug("GPT-Image-1 не поддерживает параметр style, удален")
             elif self.model == 'dall-e-2':
                 # DALL-E 2 не поддерживает quality и style
                 pass
             
             response = self.client.images.generate(**params)
             
+            logger.debug(f"Отправленные параметры в API: {params}")
+            
             # Проверяем, есть ли URL или base64
-            if hasattr(response.data[0], 'url') and response.data[0].url:
+            if hasattr(response.data[0], 'b64_json') and response.data[0].b64_json:
+                # Если есть base64, декодируем (приоритет для gpt-image-1)
+                image_bytes = base64.b64decode(response.data[0].b64_json)
+                logger.debug("Получены base64 данные")
+            elif hasattr(response.data[0], 'url') and response.data[0].url:
                 # Если есть URL, загружаем изображение
                 image_url = response.data[0].url
                 import requests
                 image_response = requests.get(image_url, timeout=30)
                 image_response.raise_for_status()
                 image_bytes = image_response.content
-            elif hasattr(response.data[0], 'b64_json') and response.data[0].b64_json:
-                # Если есть base64, декодируем
-                image_bytes = base64.b64decode(response.data[0].b64_json)
+                logger.debug(f"Загружено изображение с URL: {image_url[:50]}...")
             else:
                 raise ValueError("Ответ не содержит ни URL, ни base64 данных")
             

@@ -49,6 +49,13 @@ DEFAULT_CONFIG = {
                 "sonar-deep-research"
             ],
             "max_tokens": 8192,
+            "max_tokens_limits": {  # Лимиты токенов для каждой модели
+                "sonar": 4096,
+                "sonar-pro": 8192,
+                "sonar-reasoning": 8192,
+                "sonar-reasoning-pro": 12000,
+                "sonar-deep-research": 16384
+            },
             "temperature": 0.7,
             "top_p": 0.9,
             "presence_penalty": 0.0,
@@ -56,7 +63,28 @@ DEFAULT_CONFIG = {
             "timeout": 300,
             "search_domain_filter": [],  # Список доменов для фильтрации поиска
             "return_citations": True,
-            "return_related_questions": False
+            "return_related_questions": False,
+            "search_recency_filter": None,  # Фильтр свежести: month, week, day, hour
+            "search_depth": "high",  # Глубина поиска: low, medium, high
+            "search_after_date_filter": None,  # Формат: MM/DD/YYYY
+            "search_before_date_filter": None,  # Формат: MM/DD/YYYY
+            "web_search_options": {  # Расширенные опции поиска
+                "search_context_size": "high",  # low, medium, high
+                "enable_deep_search": True
+            },
+            "descriptions": {  # Описания параметров для UI
+                "model": "Модель для обработки запросов. Deep Research проводит глубокий анализ до 100+ источников",
+                "max_tokens": "Максимальная длина ответа в токенах (зависит от модели)",
+                "temperature": "Креативность ответов (0-1). Меньше = точнее, больше = креативнее",
+                "top_p": "Альтернативный контроль креативности (0-1)",
+                "presence_penalty": "Штраф за повторение тем (-2 до 2)",
+                "frequency_penalty": "Штраф за повторение слов (-2 до 2)",
+                "search_recency_filter": "Фильтр свежести контента (hour/day/week/month)",
+                "search_depth": "Глубина поиска информации (low/medium/high)",
+                "search_domain_filter": "Включить или исключить домены (пример: github.com, -quora.com)",
+                "search_after_date_filter": "Искать контент после даты (MM/DD/YYYY)",
+                "search_before_date_filter": "Искать контент до даты (MM/DD/YYYY)"
+            }
         },
         "openai": {
             "model": "dall-e-3",  # По умолчанию DALL-E 3
@@ -81,12 +109,47 @@ DEFAULT_CONFIG = {
             "size_options": {
                 "dall-e-2": ["256x256", "512x512", "1024x1024"],
                 "dall-e-3": ["1024x1024", "1024x1792", "1792x1024"],
-                "gpt-image-1": ["256x256", "512x512", "1024x1024", "2048x2048", "4096x4096"]
+                "gpt-image-1": ["1024x1024", "1024x1536", "1536x1024", "2048x2048", "4096x4096"]
             },
             "response_format": "url",  # url или b64_json
+            "response_format_options": {
+                "dall-e-2": ["url", "b64_json"],
+                "dall-e-3": ["url", "b64_json"],
+                "gpt-image-1": ["b64_json"]  # GPT-Image-1 всегда возвращает base64
+            },
             "moderation": "auto",  # auto или low (только для gpt-image-1)
-            "n_images": 1,  # Количество изображений (DALL-E 3 и gpt-image-1 поддерживают только 1)
-            "timeout": 120
+            "n_images": 1,  # Количество изображений
+            "n_images_limits": {
+                "dall-e-2": 10,  # DALL-E 2 поддерживает до 10 изображений
+                "dall-e-3": 1,   # DALL-E 3 только 1 изображение
+                "gpt-image-1": 1  # GPT-Image-1 только 1 изображение
+            },
+            "timeout": 120,
+            "pricing": {  # Цены за изображение
+                "dall-e-2": {
+                    "256x256": 0.016,
+                    "512x512": 0.018,
+                    "1024x1024": 0.020
+                },
+                "dall-e-3": {
+                    "standard": {"1024x1024": 0.040, "1024x1792": 0.080, "1792x1024": 0.080},
+                    "hd": {"1024x1024": 0.080, "1024x1792": 0.120, "1792x1024": 0.120}
+                },
+                "gpt-image-1": {
+                    "low": 0.02,     # Низкое качество - $0.02
+                    "medium": 0.07,  # Среднее качество - $0.07
+                    "high": 0.19     # Высокое качество - $0.19
+                }
+            },
+            "descriptions": {  # Описания параметров для UI
+                "model": "Модель генерации изображений. GPT-Image-1 - новейшая с поддержкой до 4096x4096",
+                "image_quality": "Качество изображения (влияет на цену и детализацию)",
+                "image_style": "Стиль изображения: vivid (яркий) или natural (естественный)",
+                "image_size": "Размер изображения в пикселях",
+                "response_format": "Формат ответа: URL или base64 данные",
+                "moderation": "Уровень модерации контента (только для gpt-image-1)",
+                "n_images": "Количество изображений для генерации"
+            }
         }
     },
     "schedule": {
@@ -433,9 +496,10 @@ class ConfigManager:
             # Добавляем в историю
             self.add_to_history()
             
-            # Сохраняем конфигурацию
-            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, ensure_ascii=False, indent=2)
+            # Используем безопасную запись через file_utils
+            result = safe_json_write(CONFIG_FILE, self.config)
+            if not result:
+                return False
             
             # Обновляем конфигурационные файлы Python
             self._update_python_configs()
