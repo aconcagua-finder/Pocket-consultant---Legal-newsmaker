@@ -18,6 +18,10 @@ psutil==7.0.0  # Для системных метрик
 Flask==3.0.0  # Веб-фреймворк для интерфейса настроек
 Flask-CORS==4.0.0  # CORS поддержка для API
 
+# Modern console output dependencies
+rich==13.7.0  # Красивое форматирование консольного вывода
+colorama==0.4.6  # Цветной вывод в терминале (для Windows)
+
 # Optional: Development dependencies
 # pytest==8.3.3  # Для тестирования
 # mypy==1.13.0  # Для проверки типов
