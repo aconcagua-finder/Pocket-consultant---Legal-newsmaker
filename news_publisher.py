@@ -27,7 +27,7 @@ class NewsPublisher:
         Args:
             web_config: Опциональная конфигурация из веб-интерфейса
         """
-        self.telegram_client = TelegramClient()
+        self.telegram_client = TelegramClient(web_config)
         self.openai_client = OpenAIClient(web_config)
         self.data_dir = Path(config.DATA_DIR)
         
@@ -45,13 +45,10 @@ class NewsPublisher:
     
     def _load_web_config(self) -> Optional[Dict]:
         """Загружает конфигурацию из веб-интерфейса"""
+        from file_utils import safe_json_read
         config_file = Path("config_web.json")
         if config_file.exists():
-            try:
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.error(f"Ошибка загрузки веб-конфига: {e}")
+            return safe_json_read(config_file)
         return None
         
     def _get_news_file_path(self, date: datetime) -> Path:

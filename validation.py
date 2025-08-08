@@ -82,7 +82,7 @@ def validate_news_priority(priority: int) -> Tuple[bool, Optional[str]]:
     Валидирует приоритет новости
     
     Args:
-        priority: Приоритет (1-7)
+        priority: Приоритет (1-24)
         
     Returns:
         Tuple[bool, Optional[str]]: (валидность, сообщение об ошибке)
@@ -90,8 +90,11 @@ def validate_news_priority(priority: int) -> Tuple[bool, Optional[str]]:
     if not isinstance(priority, int):
         return False, "Приоритет должен быть числом"
     
-    if priority < 1 or priority > 7:
-        return False, f"Приоритет должен быть от 1 до 7, получен {priority}"
+    # Поддерживаем до 24 публикаций в день
+    max_priority = config.PUBLICATIONS_PER_DAY if hasattr(config, 'PUBLICATIONS_PER_DAY') else 7
+    
+    if priority < 1 or priority > max_priority:
+        return False, f"Приоритет должен быть от 1 до {max_priority}, получен {priority}"
     
     return True, None
 
@@ -486,6 +489,78 @@ def validate_image_file(filepath: Path) -> Tuple[bool, Optional[str]]:
     
     if file_size == 0:
         return False, "Файл пустой"
+    
+    return True, None
+
+
+# ========================================================================
+# ВАЛИДАЦИЯ ПАРАМЕТРОВ РАСПИСАНИЯ
+# ========================================================================
+
+def validate_timezone(tz_name: str) -> Tuple[bool, Optional[str]]:
+    """
+    Валидирует название часового пояса
+    
+    Args:
+        tz_name: Название часового пояса (например, "Europe/Moscow")
+        
+    Returns:
+        Tuple[bool, Optional[str]]: (валидность, сообщение об ошибке)
+    """
+    try:
+        from timezone_utils import get_timezone
+        get_timezone(tz_name)
+        return True, None
+    except Exception as e:
+        return False, f"Некорректный часовой пояс: {tz_name}"
+
+
+def validate_publications_count(count: int) -> Tuple[bool, Optional[str]]:
+    """
+    Валидирует количество публикаций в день
+    
+    Args:
+        count: Количество публикаций
+        
+    Returns:
+        Tuple[bool, Optional[str]]: (валидность, сообщение об ошибке)
+    """
+    if not isinstance(count, int):
+        return False, "Количество публикаций должно быть числом"
+    
+    if count < 1:
+        return False, "Количество публикаций должно быть минимум 1"
+    
+    if count > 24:
+        return False, "Количество публикаций не может превышать 24"
+    
+    return True, None
+
+
+def validate_publication_schedule(schedule: List[str], count: int) -> Tuple[bool, Optional[str]]:
+    """
+    Валидирует расписание публикаций
+    
+    Args:
+        schedule: Список времён публикации
+        count: Ожидаемое количество публикаций
+        
+    Returns:
+        Tuple[bool, Optional[str]]: (валидность, сообщение об ошибке)
+    """
+    if len(schedule) < count:
+        return False, f"Недостаточно времён в расписании: {len(schedule)} из {count}"
+    
+    # Проверяем формат времени
+    time_pattern = re.compile(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    for time_str in schedule[:count]:
+        if not time_pattern.match(time_str):
+            return False, f"Некорректный формат времени: {time_str}"
+    
+    # Проверяем уникальность времён
+    unique_times = set(schedule[:count])
+    if len(unique_times) != count:
+        return False, "В расписании есть дублирующиеся времена"
     
     return True, None
 

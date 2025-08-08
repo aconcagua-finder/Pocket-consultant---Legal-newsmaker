@@ -22,15 +22,40 @@ from types_models import TelegramMessage, MessageHistoryItem  # Использу
 class TelegramClient:
     """Клиент для отправки сообщений в Telegram канал"""
     
-    def __init__(self):
+    def __init__(self, web_config=None):
+        """
+        Инициализация клиента Telegram
+        
+        Args:
+            web_config: Опциональная конфигурация из веб-интерфейса
+        """
+        # Загружаем базовые настройки из config.py
         self.bot_token = config.TELEGRAM_BOT_TOKEN
         self.channel_id = config.TELEGRAM_CHANNEL_ID
         self.bot = None
         
+        # Применяем настройки из веб-конфига если они переданы
+        if web_config and 'telegram' in web_config:
+            telegram_config = web_config['telegram']
+            self.max_message_length = telegram_config.get('max_message_length', config.TELEGRAM_MAX_MESSAGE_LENGTH)
+            self.max_caption_length = telegram_config.get('max_caption_length', config.TELEGRAM_MAX_CAPTION_LENGTH)
+            self.parse_mode = telegram_config.get('parse_mode', 'HTML')
+        else:
+            self.max_message_length = config.TELEGRAM_MAX_MESSAGE_LENGTH
+            self.max_caption_length = config.TELEGRAM_MAX_CAPTION_LENGTH
+            self.parse_mode = 'HTML'
+        
         # Файл для хранения истории сообщений
         self.history_file = Path("logs/message_history.json")
-        self.max_history_items = 15  # Храним последние 15 сообщений
-        self.max_history_days = 7  # Удаляем сообщения старше 7 дней
+        
+        # Настройки истории из веб-конфига или дефолтные
+        if web_config and 'storage' in web_config:
+            storage_config = web_config['storage']
+            self.max_history_items = storage_config.get('max_history_items', 15)
+            self.max_history_days = storage_config.get('max_history_days', 7)
+        else:
+            self.max_history_items = 15  # Храним последние 15 сообщений
+            self.max_history_days = 7  # Удаляем сообщения старше 7 дней
         
         # Создаем папку logs если её нет
         self.history_file.parent.mkdir(exist_ok=True)

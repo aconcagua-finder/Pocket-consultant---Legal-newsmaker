@@ -154,18 +154,24 @@ class NewsmakerScheduler:
         schedule.clear()
         
         logger.info("📅 Настройка расписания задач (МСК):")
+        logger.info(f"  📰 Количество публикаций в день: {config.PUBLICATIONS_PER_DAY}")
         
         # Ежедневный сбор новостей в 08:30
         schedule.every().day.at(config.COLLECTION_TIME).do(self.collect_daily_news_job)
         logger.info(f"  🔍 Сбор новостей: {config.COLLECTION_TIME}")
         
-        # Публикации по расписанию
-        for i, time_str in enumerate(config.PUBLICATION_SCHEDULE, 1):
+        # Публикации по расписанию (только до PUBLICATIONS_PER_DAY)
+        actual_schedule = config.PUBLICATION_SCHEDULE[:config.PUBLICATIONS_PER_DAY]
+        for i, time_str in enumerate(actual_schedule, 1):
             schedule.every().day.at(time_str).do(self.publish_news_job)
             logger.info(f"  📱 Публикация #{i}: {time_str}")
         
         # Показываем следующие запуски
         logger.info(f"⏰ Следующий запуск: {schedule.next_run()}")
+        
+        # Показываем пользовательский часовой пояс если отличается от МСК
+        if hasattr(config, 'USER_TIMEZONE') and config.USER_TIMEZONE != "Europe/Moscow":
+            logger.info(f"🌍 Часовой пояс пользователя: {config.USER_TIMEZONE}")
     
     def run_manual_collection(self):
         """Ручной запуск сбора новостей"""

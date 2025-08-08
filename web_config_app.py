@@ -19,7 +19,16 @@ import secrets
 import shutil
 
 # Импортируем модули проекта
-from timezone_utils import now_msk
+from timezone_utils import (
+    now_msk, 
+    get_all_timezones_with_offset,
+    format_schedule_preview,
+    to_user_timezone,
+    from_user_timezone,
+    parse_time_string,
+    get_timezone,
+    POPULAR_TIMEZONES
+)
 from file_utils import safe_json_write, safe_json_read
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -154,6 +163,8 @@ DEFAULT_CONFIG = {
     },
     "schedule": {
         "collection_time": "08:30",
+        "publications_per_day": 7,  # Количество публикаций в день (1-24)
+        "user_timezone": "Europe/Moscow",  # Часовой пояс пользователя
         "publication_times": [
             "09:05",
             "11:03", 
@@ -163,7 +174,8 @@ DEFAULT_CONFIG = {
             "19:02",
             "21:07"
         ],
-        "timezone": "Europe/Moscow"
+        "auto_distribute": False,  # Автоматическое распределение времён
+        "timezone": "Europe/Moscow"  # Legacy для совместимости
     },
     "content": {
         "max_news_per_day": 7,
@@ -589,28 +601,56 @@ class ConfigManager:
             # Создаем временный файл с обновленными настройками
             config_updates = []
             
-            # API настройки
-            config_updates.append(f'PERPLEXITY_MODEL = "{self.config["api_models"]["perplexity"]["model"]}"')
-            config_updates.append(f'PERPLEXITY_MAX_TOKENS = {self.config["api_models"]["perplexity"]["max_tokens"]}')
-            config_updates.append(f'OPENAI_IMAGE_MODEL = "{self.config["api_models"]["openai"]["model"]}"')
-            config_updates.append(f'OPENAI_IMAGE_QUALITY = "{self.config["api_models"]["openai"]["image_quality"]}"')
-            config_updates.append(f'OPENAI_IMAGE_STYLE = "{self.config["api_models"]["openai"]["image_style"]}"')
-            config_updates.append(f'OPENAI_IMAGE_SIZE = "{self.config["api_models"]["openai"]["image_size"]}"')
+            # API настройки Perplexity
+            if "api_models" in self.config and "perplexity" in self.config["api_models"]:
+                perplexity = self.config["api_models"]["perplexity"]
+                config_updates.append(f'PERPLEXITY_MODEL = "{perplexity.get("model", "sonar-deep-research")}"')
+                config_updates.append(f'PERPLEXITY_MAX_TOKENS = {perplexity.get("max_tokens", 8192)}')
+                config_updates.append(f'PERPLEXITY_TEMPERATURE = {perplexity.get("temperature", 0.7)}')
+                config_updates.append(f'PERPLEXITY_TOP_P = {perplexity.get("top_p", 0.9)}')
+                config_updates.append(f'PERPLEXITY_SEARCH_DEPTH = "{perplexity.get("search_depth", "high")}"')
+                if perplexity.get("search_recency_filter"):
+                    config_updates.append(f'PERPLEXITY_SEARCH_RECENCY = "{perplexity["search_recency_filter"]}"')
+            
+            # API настройки OpenAI
+            if "api_models" in self.config and "openai" in self.config["api_models"]:
+                openai = self.config["api_models"]["openai"]
+                config_updates.append(f'OPENAI_IMAGE_MODEL = "{openai.get("model", "dall-e-3")}"')
+                config_updates.append(f'OPENAI_IMAGE_QUALITY = "{openai.get("image_quality", "standard")}"')
+                if openai.get("image_style"):  # Не все модели имеют стиль
+                    config_updates.append(f'OPENAI_IMAGE_STYLE = "{openai["image_style"]}"')
+                config_updates.append(f'OPENAI_IMAGE_SIZE = "{openai.get("image_size", "1024x1024")}"')
             
             # Расписание
-            config_updates.append(f'COLLECTION_TIME = "{self.config["schedule"]["collection_time"]}"')
-            config_updates.append(f'PUBLICATION_SCHEDULE = {json.dumps(self.config["schedule"]["publication_times"])}')
+            if "schedule" in self.config:
+                schedule = self.config["schedule"]
+                config_updates.append(f'COLLECTION_TIME = "{schedule.get("collection_time", "08:30")}"')
+                config_updates.append(f'USER_TIMEZONE = "{schedule.get("user_timezone", "Europe/Moscow")}"')
+                config_updates.append(f'PUBLICATIONS_PER_DAY = {schedule.get("publications_per_day", 7)}')
+                config_updates.append(f'PUBLICATION_SCHEDULE = {json.dumps(schedule.get("publication_times", []))}')
             
-            # Лимиты
-            config_updates.append(f'MAX_NEWS_PER_DAY = {self.config["content"]["max_news_per_day"]}')
-            config_updates.append(f'MIN_CONTENT_LENGTH = {self.config["content"]["min_content_length"]}')
-            config_updates.append(f'MAX_CONTENT_LENGTH = {self.config["content"]["max_content_length"]}')
+            # Лимиты контента
+            if "content" in self.config:
+                content = self.config["content"]
+                config_updates.append(f'MAX_NEWS_PER_DAY = {content.get("max_news_per_day", 7)}')
+                config_updates.append(f'MIN_CONTENT_LENGTH = {content.get("min_content_length", 50)}')
+                config_updates.append(f'MAX_CONTENT_LENGTH = {content.get("max_content_length", 1500)}')
+                config_updates.append(f'CONTENT_SIMILARITY_THRESHOLD = {content.get("similarity_threshold", 0.7)}')
+            
+            # Telegram настройки
+            if "telegram" in self.config:
+                telegram = self.config["telegram"]
+                config_updates.append(f'TELEGRAM_MAX_MESSAGE_LENGTH = {telegram.get("max_message_length", 4096)}')
+                config_updates.append(f'TELEGRAM_MAX_CAPTION_LENGTH = {telegram.get("max_caption_length", 1024)}')
             
             # Записываем обновления в файл
             updates_file = Path("config_updates.py")
+            safe_json_write(updates_file, None)  # Создаем блокировку
             with open(updates_file, 'w', encoding='utf-8') as f:
                 f.write("# Автоматически сгенерированные обновления конфигурации\n")
-                f.write("# Импортируйте этот файл в config.py для применения изменений\n\n")
+                f.write("# Этот файл обновляется автоматически из веб-интерфейса\n")
+                f.write("# НЕ редактируйте его вручную!\n\n")
+                f.write("# Сгенерировано: " + str(now_msk()) + "\n\n")
                 for update in config_updates:
                     f.write(f"{update}\n")
             
@@ -619,6 +659,7 @@ class ConfigManager:
             
         except Exception as e:
             logger.error(f"Ошибка обновления Python конфигурации: {e}")
+            logger.exception("Детали ошибки:")
             return False
     
     def validate_config(self) -> Dict[str, List[str]]:
@@ -995,6 +1036,120 @@ def duplicate_profile():
             }), 500
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/timezones', methods=['GET'])
+def get_timezones():
+    """API endpoint для получения списка часовых поясов"""
+    try:
+        timezones = get_all_timezones_with_offset()
+        return jsonify({
+            "success": True,
+            "timezones": [
+                {
+                    "value": tz[0],
+                    "label": f"{tz[1]} ({tz[2]})",
+                    "offset": tz[2]
+                }
+                for tz in timezones
+            ],
+            "current": config_manager.config["schedule"].get("user_timezone", "Europe/Moscow")
+        })
+    except Exception as e:
+        logger.error(f"Ошибка получения часовых поясов: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/schedule/preview', methods=['POST'])
+def preview_schedule():
+    """API endpoint для предпросмотра расписания в разных часовых поясах"""
+    try:
+        data = request.json
+        schedule = data.get('schedule', [])
+        user_tz = data.get('user_timezone', 'Europe/Moscow')
+        
+        preview = format_schedule_preview(schedule, user_tz)
+        
+        return jsonify({
+            "success": True,
+            "preview": preview,
+            "user_timezone": user_tz
+        })
+    except Exception as e:
+        logger.error(f"Ошибка предпросмотра расписания: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/schedule/auto-distribute', methods=['POST'])
+def auto_distribute_schedule():
+    """API endpoint для автоматического распределения времён публикации"""
+    try:
+        data = request.json
+        publications_count = data.get('publications_count', 7)
+        start_time = data.get('start_time', '09:00')
+        end_time = data.get('end_time', '21:00')
+        
+        # Парсим время начала и конца
+        start_hour, start_min = map(int, start_time.split(':'))
+        end_hour, end_min = map(int, end_time.split(':'))
+        
+        # Вычисляем общее количество минут
+        total_minutes = (end_hour * 60 + end_min) - (start_hour * 60 + start_min)
+        
+        # Распределяем равномерно
+        if publications_count <= 1:
+            schedule = [start_time]
+        else:
+            interval = total_minutes // (publications_count - 1)
+            schedule = []
+            for i in range(publications_count):
+                minutes = (start_hour * 60 + start_min) + (interval * i)
+                hour = minutes // 60
+                minute = minutes % 60
+                schedule.append(f"{hour:02d}:{minute:02d}")
+        
+        return jsonify({
+            "success": True,
+            "schedule": schedule[:publications_count]
+        })
+    except Exception as e:
+        logger.error(f"Ошибка автоматического распределения: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/schedule/convert', methods=['POST'])
+def convert_schedule_timezone():
+    """API endpoint для конвертации расписания между часовыми поясами"""
+    try:
+        data = request.json
+        schedule = data.get('schedule', [])
+        from_tz = data.get('from_timezone', 'Europe/Moscow')
+        to_tz = data.get('to_timezone', 'Europe/Moscow')
+        
+        if from_tz == to_tz:
+            return jsonify({
+                "success": True,
+                "schedule": schedule
+            })
+        
+        # Конвертируем каждое время
+        converted = []
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        for time_str in schedule:
+            # Парсим время в исходном часовом поясе
+            dt = parse_time_string(time_str, today, from_tz)
+            # Конвертируем в целевой часовой пояс
+            converted_dt = dt.astimezone(get_timezone(to_tz))
+            converted.append(converted_dt.strftime("%H:%M"))
+        
+        return jsonify({
+            "success": True,
+            "schedule": converted
+        })
+    except Exception as e:
+        logger.error(f"Ошибка конвертации расписания: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 def main():

@@ -232,6 +232,48 @@
             cursor: pointer;
         }
         
+        /* Расписание */
+        .schedule-time-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .schedule-time-input .priority-badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 25px;
+            text-align: center;
+        }
+        
+        .schedule-preview-item {
+            display: grid;
+            grid-template-columns: 30px 1fr 1fr auto;
+            gap: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            align-items: center;
+        }
+        
+        .schedule-preview-item.next-day {
+            background: #fff9e6;
+        }
+        
+        .timezone-offset {
+            color: var(--secondary);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
         /* Уведомления */
         .notification {
             padding: 15px 20px;
@@ -706,25 +748,73 @@
             <div class="tab-content" id="schedule-tab">
                 <div class="form-section">
                     <h3><i class="fas fa-calendar-alt"></i> Расписание публикаций</h3>
+                    
+                    <!-- Выбор часового пояса -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label><i class="fas fa-globe"></i> Ваш часовой пояс</label>
+                            <select id="user-timezone" onchange="updateSchedulePreview()">
+                                <!-- Опции будут загружены динамически -->
+                            </select>
+                            <div class="help-text">Выберите ваш часовой пояс для отображения времени</div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-server"></i> Системный часовой пояс</label>
+                            <input type="text" value="Europe/Moscow (МСК)" readonly style="background: #f0f0f0;">
+                            <div class="help-text">Сбор и публикация происходят по МСК</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Время сбора -->
                     <div class="form-group">
                         <label>Время сбора новостей</label>
-                        <input type="time" id="collection-time" value="08:30">
-                        <div class="help-text">Время ежедневного сбора новостей (МСК)</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Время публикаций (7 слотов)</label>
                         <div class="form-row">
-                            <input type="time" id="pub-time-1" value="09:05">
-                            <input type="time" id="pub-time-2" value="11:03">
-                            <input type="time" id="pub-time-3" value="13:07">
-                            <input type="time" id="pub-time-4" value="15:09">
+                            <input type="time" id="collection-time" value="08:30" onchange="updateSchedulePreview()">
+                            <div style="padding: 10px;">
+                                <span id="collection-time-preview" style="color: var(--primary); font-weight: 600;">
+                                    08:30 МСК
+                                </span>
+                            </div>
                         </div>
-                        <div class="form-row" style="margin-top: 10px;">
-                            <input type="time" id="pub-time-5" value="17:05">
-                            <input type="time" id="pub-time-6" value="19:02">
-                            <input type="time" id="pub-time-7" value="21:07">
+                        <div class="help-text">Время ежедневного сбора новостей в вашем часовом поясе</div>
+                    </div>
+                    
+                    <!-- Количество публикаций -->
+                    <div class="form-group">
+                        <label>Количество публикаций в день</label>
+                        <div class="form-row">
+                            <input type="range" id="publications-count" min="1" max="24" value="7" 
+                                   oninput="updatePublicationsCount()" style="flex: 1;">
+                            <div style="padding: 10px; min-width: 50px; text-align: center;">
+                                <span id="publications-count-display" style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">7</span>
+                            </div>
                         </div>
-                        <div class="help-text">Время публикации каждой из 7 новостей (МСК)</div>
+                        <div class="help-text">Выберите от 1 до 24 публикаций в день</div>
+                    </div>
+                    
+                    <!-- Время публикаций -->
+                    <div class="form-group">
+                        <label>Время публикаций</label>
+                        <div style="margin-bottom: 15px;">
+                            <button type="button" class="btn-secondary" onclick="autoDistributeSchedule()">
+                                <i class="fas fa-magic"></i> Распределить автоматически
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="clearSchedule()">
+                                <i class="fas fa-eraser"></i> Очистить
+                            </button>
+                        </div>
+                        <div id="publication-times-container">
+                            <!-- Динамически генерируемые поля времени -->
+                        </div>
+                        <div class="help-text">Время публикации каждой новости в вашем часовом поясе</div>
+                    </div>
+                    
+                    <!-- Предпросмотр расписания -->
+                    <div class="form-section" style="background: #f8f9fa; margin-top: 20px;">
+                        <h4><i class="fas fa-eye"></i> Предпросмотр расписания</h4>
+                        <div id="schedule-preview" style="display: grid; gap: 10px;">
+                            <!-- Динамический предпросмотр -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1131,11 +1221,7 @@
                             timeout: 120
                         }
                     },
-                    schedule: {
-                        collection_time: document.getElementById('collection-time').value,
-                        publication_times: [],
-                        timezone: 'Europe/Moscow'
-                    },
+                    schedule: collectScheduleData(),
                     content: {
                         max_news_per_day: parseInt(document.getElementById('news-per-day').value),
                         min_content_length: parseInt(document.getElementById('min-content').value),
@@ -1159,13 +1245,7 @@
                     monitoring: currentConfig.monitoring || {}
                 };
                 
-                // Собираем времена публикации
-                for (let i = 1; i <= 7; i++) {
-                    const time = document.getElementById(`pub-time-${i}`).value;
-                    if (time) {
-                        config.schedule.publication_times.push(time);
-                    }
-                }
+                // Времена публикации уже собраны в collectScheduleData()
                 
                 // Собираем промпты
                 const prompts = {
@@ -1442,6 +1522,237 @@
             } else {
                 publishWithoutImages.disabled = false;
             }
+        }
+        
+        // ========== НОВЫЕ ФУНКЦИИ ДЛЯ РАСПИСАНИЯ ==========
+        
+        // Загрузка списка часовых поясов
+        async function loadTimezones() {
+            try {
+                const response = await fetch('/api/timezones');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('user-timezone');
+                    select.innerHTML = '';
+                    
+                    data.timezones.forEach(tz => {
+                        const option = document.createElement('option');
+                        option.value = tz.value;
+                        option.textContent = tz.label;
+                        select.appendChild(option);
+                    });
+                    
+                    // Устанавливаем текущий часовой пояс
+                    select.value = data.current || 'Europe/Moscow';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки часовых поясов:', error);
+            }
+        }
+        
+        // Обновление количества полей для времени публикаций
+        function updatePublicationsCount() {
+            const count = parseInt(document.getElementById('publications-count').value);
+            document.getElementById('publications-count-display').textContent = count;
+            
+            const container = document.getElementById('publication-times-container');
+            container.innerHTML = '';
+            
+            // Создаем поля для каждой публикации
+            const rows = Math.ceil(count / 4);
+            for (let row = 0; row < rows; row++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'form-row';
+                rowDiv.style.marginBottom = '10px';
+                
+                for (let col = 0; col < 4 && (row * 4 + col) < count; col++) {
+                    const index = row * 4 + col + 1;
+                    const inputDiv = document.createElement('div');
+                    inputDiv.className = 'schedule-time-input';
+                    
+                    const badge = document.createElement('span');
+                    badge.className = 'priority-badge';
+                    badge.textContent = index;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'time';
+                    input.id = `pub-time-${index}`;
+                    input.onchange = updateSchedulePreview;
+                    
+                    // Устанавливаем значение из текущей конфигурации
+                    const pubTimes = currentConfig.schedule?.publication_times || [];
+                    if (pubTimes[index - 1]) {
+                        input.value = pubTimes[index - 1];
+                    }
+                    
+                    inputDiv.appendChild(badge);
+                    inputDiv.appendChild(input);
+                    rowDiv.appendChild(inputDiv);
+                }
+                
+                container.appendChild(rowDiv);
+            }
+            
+            updateSchedulePreview();
+        }
+        
+        // Автоматическое распределение времён публикации
+        async function autoDistributeSchedule() {
+            const count = parseInt(document.getElementById('publications-count').value);
+            
+            try {
+                const response = await fetch('/api/schedule/auto-distribute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        publications_count: count,
+                        start_time: '09:00',
+                        end_time: '21:00'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Заполняем поля времени
+                    data.schedule.forEach((time, index) => {
+                        const input = document.getElementById(`pub-time-${index + 1}`);
+                        if (input) {
+                            input.value = time;
+                        }
+                    });
+                    
+                    updateSchedulePreview();
+                    showNotification('success', 'Расписание распределено автоматически');
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка автоматического распределения');
+            }
+        }
+        
+        // Очистка расписания
+        function clearSchedule() {
+            const count = parseInt(document.getElementById('publications-count').value);
+            for (let i = 1; i <= count; i++) {
+                const input = document.getElementById(`pub-time-${i}`);
+                if (input) {
+                    input.value = '';
+                }
+            }
+            updateSchedulePreview();
+        }
+        
+        // Обновление предпросмотра расписания
+        async function updateSchedulePreview() {
+            const userTz = document.getElementById('user-timezone').value;
+            const count = parseInt(document.getElementById('publications-count').value);
+            
+            // Собираем времена
+            const schedule = [];
+            for (let i = 1; i <= count; i++) {
+                const input = document.getElementById(`pub-time-${i}`);
+                if (input && input.value) {
+                    schedule.push(input.value);
+                }
+            }
+            
+            if (schedule.length === 0) {
+                document.getElementById('schedule-preview').innerHTML = 
+                    '<div style="text-align: center; color: #999;">Заполните время публикаций для предпросмотра</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/schedule/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        schedule: schedule,
+                        user_timezone: userTz
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const container = document.getElementById('schedule-preview');
+                    container.innerHTML = '';
+                    
+                    data.preview.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'schedule-preview-item';
+                        if (item.is_next_day) {
+                            div.classList.add('next-day');
+                        }
+                        
+                        div.innerHTML = `
+                            <span class="priority-badge">${item.priority}</span>
+                            <div>
+                                <strong>${item.user_time}</strong>
+                                <span class="timezone-offset">Ваше время</span>
+                            </div>
+                            <div>
+                                <strong>${item.msk_time}</strong>
+                                <span class="timezone-offset">МСК</span>
+                            </div>
+                            ${item.is_next_day ? '<span style="color: var(--warning); font-size: 12px;">+1 день</span>' : ''}
+                        `;
+                        
+                        container.appendChild(div);
+                    });
+                    
+                    // Обновляем предпросмотр времени сбора
+                    const collectionTime = document.getElementById('collection-time').value;
+                    if (collectionTime) {
+                        document.getElementById('collection-time-preview').textContent = 
+                            `${collectionTime} в вашем часовом поясе`;
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка обновления предпросмотра:', error);
+            }
+        }
+        
+        // Обновляем функцию populateForms для работы с новыми полями
+        const originalPopulateForms = populateForms;
+        populateForms = function() {
+            originalPopulateForms();
+            
+            // Загружаем часовые пояса
+            loadTimezones();
+            
+            // Устанавливаем количество публикаций
+            const pubCount = currentConfig.schedule?.publications_per_day || 
+                           currentConfig.content?.max_news_per_day || 7;
+            document.getElementById('publications-count').value = pubCount;
+            updatePublicationsCount();
+            
+            // Устанавливаем часовой пояс
+            const userTz = currentConfig.schedule?.user_timezone || 'Europe/Moscow';
+            setTimeout(() => {
+                document.getElementById('user-timezone').value = userTz;
+                updateSchedulePreview();
+            }, 500);
+        };
+        
+        // Обновляем сбор данных формы
+        function collectScheduleData() {
+            const count = parseInt(document.getElementById('publications-count').value);
+            const schedule = [];
+            
+            for (let i = 1; i <= count; i++) {
+                const input = document.getElementById(`pub-time-${i}`);
+                if (input && input.value) {
+                    schedule.push(input.value);
+                }
+            }
+            
+            return {
+                collection_time: document.getElementById('collection-time').value,
+                publications_per_day: count,
+                user_timezone: document.getElementById('user-timezone').value,
+                publication_times: schedule,
+                timezone: 'Europe/Moscow'  // Системный часовой пояс всегда МСК
+            };
         }
     </script>
     
