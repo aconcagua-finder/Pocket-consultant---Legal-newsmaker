@@ -129,10 +129,13 @@ def get_timezone(tz_name: str) -> Union[ZoneInfo, timezone]:
         ZoneInfo или timezone объект
     """
     try:
-        return ZoneInfo(tz_name)
-    except Exception:
+        from zoneinfo import ZoneInfo as ZI
+        return ZI(tz_name)
+    except Exception as e:
         # Если не удалось создать ZoneInfo, пытаемся вернуть МСК по умолчанию
-        logger.warning(f"Не удалось создать ZoneInfo для {tz_name}, используется МСК")
+        if tz_name == "Europe/Moscow":
+            return MSK
+        logger.warning(f"Не удалось создать ZoneInfo для {tz_name}: {e}, используется МСК")
         return MSK
 
 

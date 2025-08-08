@@ -1,14 +1,25 @@
 # Автоматически сгенерированные обновления конфигурации
-# Импортируйте этот файл в config.py для применения изменений
+# Этот файл обновляется автоматически из веб-интерфейса
+# НЕ редактируйте его вручную!
+
+# Сгенерировано: 2025-08-08 16:08:20.468009+03:00
 
 PERPLEXITY_MODEL = "sonar-deep-research"
 PERPLEXITY_MAX_TOKENS = 8192
-OPENAI_IMAGE_MODEL = "gpt-image-1"
+PERPLEXITY_TEMPERATURE = 0.7
+PERPLEXITY_TOP_P = 0.9
+PERPLEXITY_SEARCH_DEPTH = "high"
+OPENAI_IMAGE_MODEL = "dall-e-3"
 OPENAI_IMAGE_QUALITY = "standard"
 OPENAI_IMAGE_STYLE = "vivid"
 OPENAI_IMAGE_SIZE = "1024x1024"
 COLLECTION_TIME = "08:30"
+USER_TIMEZONE = "Europe/Moscow"
+PUBLICATIONS_PER_DAY = 7
 PUBLICATION_SCHEDULE = ["09:05", "11:03", "13:07", "15:09", "17:05", "19:02", "21:07"]
 MAX_NEWS_PER_DAY = 7
 MIN_CONTENT_LENGTH = 50
 MAX_CONTENT_LENGTH = 1500
+CONTENT_SIMILARITY_THRESHOLD = 0.7
+TELEGRAM_MAX_MESSAGE_LENGTH = 4096
+TELEGRAM_MAX_CAPTION_LENGTH = 1024

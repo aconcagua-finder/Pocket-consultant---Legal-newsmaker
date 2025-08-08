@@ -13,6 +13,7 @@ tenacity==9.1.2  # Для retry логики с exponential backoff
 cachetools==6.1.0  # Для кеширования
 httpx==0.25.2  # HTTP клиент (версия для совместимости с telegram)
 psutil==7.0.0  # Для системных метрик
+tzdata==2025.2  # Данные часовых поясов для ZoneInfo (важно для Windows)
 
 # Web interface dependencies
 Flask==3.0.0  # Веб-фреймворк для интерфейса настроек

@@ -310,6 +310,40 @@ class ConfigManager:
             logger.error(f"Ошибка сохранения профиля: {e}")
             return False
     
+    def migrate_profile_config(self, config: dict) -> dict:
+        """Мигрирует старую структуру конфигурации профиля на новую"""
+        try:
+            # Миграция настроек расписания
+            if "schedule" in config:
+                schedule = config["schedule"]
+                
+                # Добавляем user_timezone если его нет
+                if "user_timezone" not in schedule:
+                    # Берём из старого поля timezone или ставим МСК
+                    schedule["user_timezone"] = schedule.get("timezone", "Europe/Moscow")
+                    logger.info(f"Добавлено поле user_timezone: {schedule['user_timezone']}")
+                
+                # Добавляем publications_per_day если его нет
+                if "publications_per_day" not in schedule:
+                    # Определяем по количеству времён публикации
+                    pub_times = schedule.get("publication_times", [])
+                    schedule["publications_per_day"] = len(pub_times) if pub_times else 7
+                    logger.info(f"Добавлено поле publications_per_day: {schedule['publications_per_day']}")
+                
+                # Добавляем auto_distribute если его нет
+                if "auto_distribute" not in schedule:
+                    schedule["auto_distribute"] = False
+                    logger.info("Добавлено поле auto_distribute: False")
+                
+                # Убеждаемся что есть поле timezone для совместимости
+                if "timezone" not in schedule:
+                    schedule["timezone"] = schedule.get("user_timezone", "Europe/Moscow")
+            
+            return config
+        except Exception as e:
+            logger.error(f"Ошибка миграции конфигурации: {e}")
+            return config
+    
     def load_profile(self, profile_name: str) -> bool:
         """Загружает настройки из профиля"""
         try:
@@ -318,9 +352,19 @@ class ConfigManager:
                 return False
             
             profile_data = self.profiles[profile_name]
-            self.config = copy.deepcopy(profile_data.get("config", DEFAULT_CONFIG))
+            loaded_config = profile_data.get("config", DEFAULT_CONFIG)
+            
+            # Мигрируем конфигурацию если нужно
+            migrated_config = self.migrate_profile_config(copy.deepcopy(loaded_config))
+            
+            self.config = migrated_config
             self.prompts = copy.deepcopy(profile_data.get("prompts", DEFAULT_PROMPTS))
             self.current_profile = profile_name
+            
+            # Если конфигурация была мигрирована, сохраняем обратно в профиль
+            if migrated_config != loaded_config:
+                logger.info(f"Профиль '{profile_name}' был мигрирован на новую структуру")
+                self.save_profile(profile_name)
             
             # Сохраняем как текущую конфигурацию
             self.save_config()
@@ -1122,30 +1166,37 @@ def convert_schedule_timezone():
     """API endpoint для конвертации расписания между часовыми поясами"""
     try:
         data = request.json
-        schedule = data.get('schedule', [])
+        # Поддерживаем оба варианта названия параметра для совместимости
+        times = data.get('times') or data.get('schedule', [])
         from_tz = data.get('from_timezone', 'Europe/Moscow')
         to_tz = data.get('to_timezone', 'Europe/Moscow')
         
         if from_tz == to_tz:
             return jsonify({
                 "success": True,
-                "schedule": schedule
+                "converted_times": times,
+                "schedule": times  # Для обратной совместимости
             })
         
         # Конвертируем каждое время
         converted = []
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        for time_str in schedule:
-            # Парсим время в исходном часовом поясе
-            dt = parse_time_string(time_str, today, from_tz)
-            # Конвертируем в целевой часовой пояс
-            converted_dt = dt.astimezone(get_timezone(to_tz))
-            converted.append(converted_dt.strftime("%H:%M"))
+        for time_str in times:
+            try:
+                # Парсим время в исходном часовом поясе
+                dt = parse_time_string(time_str, today, from_tz)
+                # Конвертируем в целевой часовой пояс
+                converted_dt = dt.astimezone(get_timezone(to_tz))
+                converted.append(converted_dt.strftime("%H:%M"))
+            except Exception as e:
+                logger.warning(f"Не удалось конвертировать время '{time_str}': {e}")
+                converted.append(time_str)  # Оставляем как есть при ошибке
         
         return jsonify({
             "success": True,
-            "schedule": converted
+            "converted_times": converted,
+            "schedule": converted  # Для обратной совместимости
         })
     except Exception as e:
         logger.error(f"Ошибка конвертации расписания: {e}")

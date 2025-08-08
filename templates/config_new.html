@@ -753,7 +753,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label><i class="fas fa-globe"></i> Ваш часовой пояс</label>
-                            <select id="user-timezone" onchange="updateSchedulePreview()">
+                            <select id="user-timezone" onchange="onTimezoneChange()">
                                 <!-- Опции будут загружены динамически -->
                             </select>
                             <div class="help-text">Выберите ваш часовой пояс для отображения времени</div>
@@ -1526,6 +1526,89 @@
         
         // ========== НОВЫЕ ФУНКЦИИ ДЛЯ РАСПИСАНИЯ ==========
         
+        // Конвертация времени между таймзонами
+        async function convertTimeBetweenTimezones(times, fromTz, toTz) {
+            try {
+                const response = await fetch('/api/schedule/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        times: times,
+                        from_timezone: fromTz,
+                        to_timezone: toTz
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    return data.converted_times;
+                }
+                return times;
+            } catch (error) {
+                console.error('Ошибка конвертации времени:', error);
+                return times;
+            }
+        }
+        
+        // Обновление времён при смене таймзоны
+        let previousTimezone = null;
+        
+        async function onTimezoneChange() {
+            const newTimezone = document.getElementById('user-timezone').value;
+            
+            if (!previousTimezone) {
+                previousTimezone = currentConfig.schedule?.user_timezone || 'Europe/Moscow';
+            }
+            
+            // Если таймзона не изменилась, ничего не делаем
+            if (newTimezone === previousTimezone) {
+                return;
+            }
+            
+            // Собираем текущие времена
+            const count = parseInt(document.getElementById('publications-count').value);
+            const currentTimes = [];
+            
+            for (let i = 1; i <= count; i++) {
+                const input = document.getElementById(`pub-time-${i}`);
+                if (input && input.value) {
+                    currentTimes.push(input.value);
+                }
+            }
+            
+            // Конвертируем время сбора
+            const collectionTime = document.getElementById('collection-time').value;
+            if (collectionTime) {
+                const convertedCollection = await convertTimeBetweenTimezones(
+                    [collectionTime], 
+                    previousTimezone, 
+                    newTimezone
+                );
+                if (convertedCollection && convertedCollection.length > 0) {
+                    document.getElementById('collection-time').value = convertedCollection[0];
+                }
+            }
+            
+            // Конвертируем времена публикаций
+            if (currentTimes.length > 0) {
+                const convertedTimes = await convertTimeBetweenTimezones(
+                    currentTimes, 
+                    previousTimezone, 
+                    newTimezone
+                );
+                
+                for (let i = 0; i < convertedTimes.length; i++) {
+                    const input = document.getElementById(`pub-time-${i+1}`);
+                    if (input) {
+                        input.value = convertedTimes[i];
+                    }
+                }
+            }
+            
+            previousTimezone = newTimezone;
+            updateSchedulePreview();
+        }
+        
         // Загрузка списка часовых поясов
         async function loadTimezones() {
             try {
@@ -1700,11 +1783,32 @@
                         container.appendChild(div);
                     });
                     
-                    // Обновляем предпросмотр времени сбора
+                    // Обновляем предпросмотр времени сбора с конвертацией в МСК
                     const collectionTime = document.getElementById('collection-time').value;
                     if (collectionTime) {
-                        document.getElementById('collection-time-preview').textContent = 
-                            `${collectionTime} в вашем часовом поясе`;
+                        // Конвертируем время сбора в МСК для отображения
+                        fetch('/api/schedule/convert', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                times: [collectionTime],
+                                from_timezone: userTz,
+                                to_timezone: 'Europe/Moscow'
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.converted_times.length > 0) {
+                                const mskTime = data.converted_times[0];
+                                document.getElementById('collection-time-preview').innerHTML = 
+                                    `<strong>${collectionTime}</strong> в вашем часовом поясе = <strong>${mskTime}</strong> МСК`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка конвертации времени сбора:', error);
+                            document.getElementById('collection-time-preview').textContent = 
+                                `${collectionTime} в вашем часовом поясе`;
+                        });
                     }
                 }
             } catch (error) {
@@ -1728,6 +1832,8 @@
             
             // Устанавливаем часовой пояс
             const userTz = currentConfig.schedule?.user_timezone || 'Europe/Moscow';
+            // Сохраняем как предыдущую таймзону для правильной конвертации
+            previousTimezone = userTz;
             setTimeout(() => {
                 document.getElementById('user-timezone').value = userTz;
                 updateSchedulePreview();

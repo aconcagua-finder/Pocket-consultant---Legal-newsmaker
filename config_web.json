@@ -1,21 +1,181 @@
 {
   "api_models": {
-    "openai": {
-      "model": "gpt-image-1",
-      "image_quality": "high",
-      "image_style": "vivid",
-      "image_size": "1024x1024"
-    },
     "perplexity": {
       "model": "sonar-deep-research",
+      "available_models": [
+        "sonar",
+        "sonar-pro",
+        "sonar-reasoning",
+        "sonar-reasoning-pro",
+        "sonar-deep-research"
+      ],
       "max_tokens": 8192,
-      "temperature": 0.7
+      "max_tokens_limits": {
+        "sonar": 4096,
+        "sonar-pro": 8192,
+        "sonar-reasoning": 8192,
+        "sonar-reasoning-pro": 12000,
+        "sonar-deep-research": 16384
+      },
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "timeout": 300,
+      "search_domain_filter": [],
+      "return_citations": true,
+      "return_related_questions": false,
+      "search_recency_filter": null,
+      "search_depth": "high",
+      "search_after_date_filter": null,
+      "search_before_date_filter": null,
+      "web_search_options": {
+        "search_context_size": "high",
+        "enable_deep_search": true
+      },
+      "descriptions": {
+        "model": "Модель для обработки запросов. Deep Research проводит глубокий анализ до 100+ источников",
+        "max_tokens": "Максимальная длина ответа в токенах (зависит от модели)",
+        "temperature": "Креативность ответов (0-1). Меньше = точнее, больше = креативнее",
+        "top_p": "Альтернативный контроль креативности (0-1)",
+        "presence_penalty": "Штраф за повторение тем (-2 до 2)",
+        "frequency_penalty": "Штраф за повторение слов (-2 до 2)",
+        "search_recency_filter": "Фильтр свежести контента (hour/day/week/month)",
+        "search_depth": "Глубина поиска информации (low/medium/high)",
+        "search_domain_filter": "Включить или исключить домены (пример: github.com, -quora.com)",
+        "search_after_date_filter": "Искать контент после даты (MM/DD/YYYY)",
+        "search_before_date_filter": "Искать контент до даты (MM/DD/YYYY)"
+      }
+    },
+    "openai": {
+      "model": "dall-e-3",
+      "available_models": [
+        "dall-e-2",
+        "dall-e-3",
+        "gpt-image-1"
+      ],
+      "image_quality": "standard",
+      "quality_options": {
+        "dall-e-2": [
+          "standard"
+        ],
+        "dall-e-3": [
+          "standard",
+          "hd"
+        ],
+        "gpt-image-1": [
+          "low",
+          "medium",
+          "high"
+        ]
+      },
+      "image_style": "vivid",
+      "style_options": {
+        "dall-e-2": [],
+        "dall-e-3": [
+          "vivid",
+          "natural"
+        ],
+        "gpt-image-1": []
+      },
+      "image_size": "1024x1024",
+      "size_options": {
+        "dall-e-2": [
+          "256x256",
+          "512x512",
+          "1024x1024"
+        ],
+        "dall-e-3": [
+          "1024x1024",
+          "1024x1792",
+          "1792x1024"
+        ],
+        "gpt-image-1": [
+          "256x256",
+          "512x512",
+          "1024x1024",
+          "2048x2048",
+          "4096x4096"
+        ]
+      },
+      "response_format": "url",
+      "response_format_options": {
+        "dall-e-2": [
+          "url",
+          "b64_json"
+        ],
+        "dall-e-3": [
+          "url",
+          "b64_json"
+        ],
+        "gpt-image-1": [
+          "b64_json"
+        ]
+      },
+      "moderation": "auto",
+      "n_images": 1,
+      "n_images_limits": {
+        "dall-e-2": 10,
+        "dall-e-3": 1,
+        "gpt-image-1": 1
+      },
+      "timeout": 120,
+      "pricing": {
+        "dall-e-2": {
+          "256x256": 0.016,
+          "512x512": 0.018,
+          "1024x1024": 0.02
+        },
+        "dall-e-3": {
+          "standard": {
+            "1024x1024": 0.04,
+            "1024x1792": 0.08,
+            "1792x1024": 0.08
+          },
+          "hd": {
+            "1024x1024": 0.08,
+            "1024x1792": 0.12,
+            "1792x1024": 0.12
+          }
+        },
+        "gpt-image-1": {
+          "low": 0.02,
+          "medium": 0.07,
+          "high": 0.19
+        }
+      },
+      "descriptions": {
+        "model": "Модель генерации изображений. GPT-Image-1 - новейшая с поддержкой до 4096x4096",
+        "image_quality": "Качество изображения (влияет на цену и детализацию)",
+        "image_style": "Стиль изображения: vivid (яркий) или natural (естественный)",
+        "image_size": "Размер изображения в пикселях",
+        "response_format": "Формат ответа: URL или base64 данные",
+        "moderation": "Уровень модерации контента (только для gpt-image-1)",
+        "n_images": "Количество изображений для генерации"
+      }
     }
   },
+  "schedule": {
+    "collection_time": "08:30",
+    "publications_per_day": 7,
+    "user_timezone": "Europe/Moscow",
+    "publication_times": [
+      "09:05",
+      "11:03",
+      "13:07",
+      "15:09",
+      "17:05",
+      "19:02",
+      "21:07"
+    ],
+    "auto_distribute": true,
+    "timezone": "Europe/Moscow"
+  },
   "content": {
-    "max_content_length": 1500,
     "max_news_per_day": 7,
     "min_content_length": 50,
+    "max_content_length": 1500,
+    "similarity_threshold": 0.7,
     "news_priorities": [
       "КРИТИЧЕСКИ ВАЖНО",
       "ОЧЕНЬ ВАЖНО",
@@ -25,40 +185,29 @@
       "ДОПОЛНИТЕЛЬНАЯ",
       "НИЗКАЯ ВАЖНОСТЬ"
     ],
-    "similarity_threshold": 0.7
-  },
-  "monitoring": {
-    "debug_mode": false,
-    "log_level": "INFO",
-    "test_mode": false
-  },
-  "retry": {
-    "exponential_backoff": true,
-    "max_retries": 3,
-    "retry_delay": 60
-  },
-  "schedule": {
-    "collection_time": "08:30",
-    "publication_times": [
-      "09:05",
-      "11:03",
-      "13:07",
-      "15:09",
-      "17:05",
-      "19:02",
-      "21:07"
-    ]
-  },
-  "storage": {
-    "data_dir": "data",
-    "logs_dir": "logs",
-    "max_history_days": 7,
-    "max_history_items": 15,
-    "max_news_files": 30
+    "generate_images": true,
+    "publish_without_images": false
   },
   "telegram": {
-    "max_caption_length": 1024,
     "max_message_length": 4096,
+    "max_caption_length": 1024,
     "parse_mode": "HTML"
+  },
+  "storage": {
+    "max_news_files": 30,
+    "max_history_items": 15,
+    "max_history_days": 7,
+    "data_dir": "data",
+    "logs_dir": "logs"
+  },
+  "retry": {
+    "max_retries": 3,
+    "retry_delay": 60,
+    "exponential_backoff": true
+  },
+  "monitoring": {
+    "log_level": "INFO",
+    "debug_mode": false,
+    "test_mode": false
   }
 }
