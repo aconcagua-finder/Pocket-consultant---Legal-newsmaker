@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEWSMAKER Control Panel</title>
+    <title>NEWSMAKER - Панель управления</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -173,7 +173,7 @@
                             <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
                                 NEWSMAKER
                             </h1>
-                            <p class="text-xs text-gray-400">Control Panel v2.0</p>
+                            <p class="text-xs text-gray-400">Панель управления v2.0</p>
                         </div>
                     </div>
                     
@@ -182,7 +182,7 @@
                         <!-- Status indicator -->
                         <div class="flex items-center gap-2 px-3 py-1.5 rounded-full glass">
                             <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            <span class="text-xs text-gray-300">System Active</span>
+                            <span class="text-xs text-gray-300">Система активна</span>
                         </div>
                         
                         <!-- Profile dropdown -->
@@ -204,7 +204,7 @@
                                     <div class="border-t border-white/10 mt-2 pt-2">
                                         <button onclick="showNewProfileModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 transition-all flex items-center gap-2">
                                             <i class="fas fa-plus text-sm"></i>
-                                            <span>Create New Profile</span>
+                                            <span>Создать новый профиль</span>
                                         </button>
                                     </div>
                                 </div>
@@ -224,36 +224,36 @@
                         <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
                             <i class="fas fa-plug text-blue-400"></i>
                         </div>
-                        <span>API Settings</span>
+                        <span>Настройки API</span>
                     </button>
                     
                     <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="schedule">
                         <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                             <i class="fas fa-clock text-purple-400"></i>
                         </div>
-                        <span>Schedule</span>
-                        <span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-300">New</span>
+                        <span>Расписание</span>
+                        <span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-300">Новое</span>
                     </button>
                     
                     <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="content">
                         <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
                             <i class="fas fa-file-alt text-green-400"></i>
                         </div>
-                        <span>Content</span>
+                        <span>Контент</span>
                     </button>
                     
                     <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="prompts">
                         <div class="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
                             <i class="fas fa-comment-dots text-yellow-400"></i>
                         </div>
-                        <span>Prompts</span>
+                        <span>Промпты</span>
                     </button>
                     
                     <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="keys">
                         <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
                             <i class="fas fa-key text-red-400"></i>
                         </div>
-                        <span>API Keys</span>
+                        <span>API ключи</span>
                     </button>
                 </nav>
                 
@@ -261,7 +261,7 @@
                 <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
                     <button onclick="saveConfiguration()" class="w-full px-4 py-3 rounded-xl gradient-primary text-white font-medium hover:opacity-90 transition-all flex items-center justify-center gap-2">
                         <i class="fas fa-save"></i>
-                        <span>Save Changes</span>
+                        <span>Сохранить изменения</span>
                     </button>
                 </div>
             </aside>
@@ -274,10 +274,10 @@
                 <!-- API Settings Section -->
                 <section id="api-section" class="space-y-6">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-3xl font-bold">API Configuration</h2>
+                        <h2 class="text-3xl font-bold">Настройки API</h2>
                         <div class="flex gap-2">
                             <button class="px-3 py-1.5 rounded-lg glass text-sm hover:bg-white/10 transition-all">
-                                <i class="fas fa-info-circle mr-2"></i>Documentation
+                                <i class="fas fa-info-circle mr-2"></i>Документация
                             </button>
                         </div>
                     </div>
@@ -290,7 +290,7 @@
                             </div>
                             <h3 class="text-xl font-semibold">Perplexity API</h3>
                             <span class="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300">
-                                <i class="fas fa-check-circle mr-1"></i>Connected
+                                <i class="fas fa-check-circle mr-1"></i>Подключено
                             </span>
                         </div>
                         
@@ -298,8 +298,8 @@
                             <!-- Model selector -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Model
-                                    <span class="ml-2 text-xs text-gray-500">(Deep Research recommended)</span>
+                                    Модель
+                                    <span class="ml-2 text-xs text-gray-500">(Рекомендуется Deep Research)</span>
                                 </label>
                                 <select id="perplexity-model" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updatePerplexityFields()">
                                     <option value="sonar">Sonar (4K tokens)</option>
@@ -313,8 +313,8 @@
                             <!-- Max tokens -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Max Tokens
-                                    <span id="token-limit" class="ml-2 px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-300">16,384 limit</span>
+                                    Максимум токенов
+                                    <span id="token-limit" class="ml-2 px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-300">Лимит: 16,384</span>
                                 </label>
                                 <input type="number" id="perplexity-max-tokens" value="8192" min="1" max="16384" 
                                        class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
@@ -323,18 +323,71 @@
                             <!-- Temperature slider -->
                             <div class="col-span-2">
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
-                                    Temperature
+                                    Температура (креативность)
                                     <span id="temp-value" class="ml-2 text-purple-400 font-mono">0.7</span>
+                                    <span class="ml-2 text-gray-500 cursor-help" title="Контролирует случайность и креативность ответов. 0 = предсказуемо, 2 = очень креативно">
+                                        <i class="fas fa-question-circle text-xs"></i>
+                                    </span>
                                 </label>
                                 <div class="relative">
                                     <input type="range" id="perplexity-temperature" min="0" max="2" step="0.1" value="0.7"
                                            class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                                            oninput="document.getElementById('temp-value').textContent = this.value">
                                     <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                        <span>Precise</span>
-                                        <span>Balanced</span>
-                                        <span>Creative</span>
+                                        <span>Точно</span>
+                                        <span>Сбалансировано</span>
+                                        <span>Креативно</span>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Top P slider -->
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Top P (выборка токенов)
+                                    <span id="top-p-value" class="ml-2 text-purple-400 font-mono">0.9</span>
+                                    <span class="ml-2 text-gray-500 cursor-help" title="Альтернативный способ контроля случайности. Используйте либо Temperature, либо Top P">
+                                        <i class="fas fa-question-circle text-xs"></i>
+                                    </span>
+                                </label>
+                                <div class="relative">
+                                    <input type="range" id="perplexity-top-p" min="0" max="1" step="0.05" value="0.9"
+                                           class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                           oninput="document.getElementById('top-p-value').textContent = this.value">
+                                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                        <span>0.0</span>
+                                        <span>0.5</span>
+                                        <span>1.0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Presence and Frequency Penalties -->
+                            <div class="col-span-2 grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Presence Penalty
+                                        <span id="presence-value" class="ml-2 text-purple-400 font-mono">0.1</span>
+                                        <span class="ml-2 text-gray-500 cursor-help" title="Штраф за повторение тем. Положительные значения снижают вероятность повторения">
+                                            <i class="fas fa-question-circle text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="range" id="perplexity-presence-penalty" min="-2" max="2" step="0.1" value="0.1"
+                                           class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                           oninput="document.getElementById('presence-value').textContent = this.value">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Frequency Penalty
+                                        <span id="frequency-value" class="ml-2 text-purple-400 font-mono">0.1</span>
+                                        <span class="ml-2 text-gray-500 cursor-help" title="Штраф за частоту использования токенов. Снижает повторения слов">
+                                            <i class="fas fa-question-circle text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <input type="range" id="perplexity-frequency-penalty" min="-2" max="2" step="0.1" value="0.1"
+                                           class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                           oninput="document.getElementById('frequency-value').textContent = this.value">
                                 </div>
                             </div>
                             
@@ -342,28 +395,57 @@
                             <div id="deep-research-options" class="col-span-2 grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
-                                        Search Depth
-                                        <i class="fas fa-info-circle text-xs text-gray-500 ml-1"></i>
+                                        Глубина поиска
+                                        <span class="ml-2 text-gray-500 cursor-help" title="Количество источников для анализа. High = 100+ источников для глубокого исследования">
+                                            <i class="fas fa-question-circle text-xs"></i>
+                                        </span>
                                     </label>
                                     <select id="search-depth" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
-                                        <option value="low">Low (10-20 sources)</option>
-                                        <option value="medium">Medium (30-50 sources)</option>
-                                        <option value="high" selected>High (100+ sources)</option>
+                                        <option value="low">Низкая (10-20 источников)</option>
+                                        <option value="medium">Средняя (30-50 источников)</option>
+                                        <option value="high" selected>Высокая (100+ источников)</option>
                                     </select>
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
-                                        Recency Filter
-                                        <i class="fas fa-info-circle text-xs text-gray-500 ml-1"></i>
+                                        Фильтр свежести
+                                        <span class="ml-2 text-gray-500 cursor-help" title="Ограничить поиск новостями за определённый период времени">
+                                            <i class="fas fa-question-circle text-xs"></i>
+                                        </span>
                                     </label>
                                     <select id="search-recency" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
-                                        <option value="">No limit</option>
-                                        <option value="hour">Last hour</option>
-                                        <option value="day" selected>Last day</option>
-                                        <option value="week">Last week</option>
-                                        <option value="month">Last month</option>
+                                        <option value="">Без ограничений</option>
+                                        <option value="hour">Последний час</option>
+                                        <option value="day" selected>Последний день</option>
+                                        <option value="week">Последняя неделя</option>
+                                        <option value="month">Последний месяц</option>
                                     </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Additional search options -->
+                            <div class="col-span-2 space-y-4">
+                                <div class="flex items-center gap-3">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" id="perplexity-citations" checked class="w-5 h-5 rounded text-purple-500">
+                                        <span class="text-sm">Возвращать источники цитирования</span>
+                                    </label>
+                                    <span class="text-gray-500 cursor-help" title="Включить ссылки на источники информации в ответе">
+                                        <i class="fas fa-question-circle text-xs"></i>
+                                    </span>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Фильтр доменов
+                                        <span class="ml-2 text-gray-500 cursor-help" title="Список доменов для включения или исключения из поиска. По одному на строку">
+                                            <i class="fas fa-question-circle text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <textarea id="perplexity-domains" rows="3" placeholder="pravo.gov.ru&#10;consultant.ru&#10;garant.ru"
+                                              class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"></textarea>
+                                    <p class="text-xs text-gray-500 mt-1">Введите домены для приоритетного поиска (по одному на строку)</p>
                                 </div>
                             </div>
                         </div>
@@ -375,15 +457,15 @@
                             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                                 <i class="fas fa-image text-white"></i>
                             </div>
-                            <h3 class="text-xl font-semibold">OpenAI Image Generation</h3>
+                            <h3 class="text-xl font-semibold">Генерация изображений OpenAI</h3>
                             <span id="price-badge" class="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300">
-                                <i class="fas fa-dollar-sign mr-1"></i>$0.08 per image
+                                <i class="fas fa-dollar-sign mr-1"></i>$0.08 за изображение
                             </span>
                         </div>
                         
                         <div class="grid grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Модель</label>
                                 <select id="openai-model" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updateOpenAIOptions()">
                                     <option value="dall-e-2">DALL-E 2</option>
                                     <option value="dall-e-3" selected>DALL-E 3</option>
@@ -392,7 +474,7 @@
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Size</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Размер</label>
                                 <select id="openai-size" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                     <option value="1024x1024">1024x1024</option>
                                     <option value="1024x1792">1024x1792</option>
@@ -401,10 +483,24 @@
                             </div>
                             
                             <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Quality</label>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Качество</label>
                                 <select id="openai-quality" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updateOpenAIPrice()">
                                     <option value="standard">Standard</option>
                                     <option value="hd">HD</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Style selector for DALL-E 3 -->
+                            <div id="style-selector" class="col-span-3" style="display: none;">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Стиль изображения (DALL-E 3)
+                                    <span class="ml-2 text-gray-500 cursor-help" title="Vivid = яркие, насыщенные цвета. Natural = более реалистичные, естественные цвета">
+                                        <i class="fas fa-question-circle text-xs"></i>
+                                    </span>
+                                </label>
+                                <select id="openai-style" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                    <option value="vivid">Vivid (яркий)</option>
+                                    <option value="natural">Natural (естественный)</option>
                                 </select>
                             </div>
                         </div>
@@ -414,17 +510,17 @@
                 <!-- Schedule Section -->
                 <section id="schedule-section" class="space-y-6 hidden">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-3xl font-bold">Publication Schedule</h2>
+                        <h2 class="text-3xl font-bold">Расписание публикаций</h2>
                         <div class="flex gap-2">
                             <button onclick="autoDistributeSchedule()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
-                                <i class="fas fa-magic mr-2"></i>Auto-distribute
+                                <i class="fas fa-magic mr-2"></i>Авто-распределить
                             </button>
                         </div>
                     </div>
                     
                     <!-- Visual Timeline -->
                     <div class="rounded-2xl glass p-6">
-                        <h3 class="text-lg font-semibold mb-4">Daily Timeline</h3>
+                        <h3 class="text-lg font-semibold mb-4">Ежедневная шкала времени</h3>
                         
                         <!-- Timeline visualization -->
                         <div class="relative h-32 rounded-xl timeline-track p-4">
@@ -440,7 +536,7 @@
                             <!-- Collection time marker -->
                             <div id="collection-marker" class="absolute top-12 w-1 h-16 bg-blue-500 rounded-full" style="left: 35%;">
                                 <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded bg-blue-500 text-xs whitespace-nowrap">
-                                    Collection
+                                    Сбор новостей
                                 </div>
                             </div>
                             
@@ -455,17 +551,17 @@
                     <div class="grid grid-cols-2 gap-6">
                         <!-- Collection Time -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Collection Time</h3>
+                            <h3 class="text-lg font-semibold mb-4">Время сбора</h3>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Daily collection time</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Ежедневное время сбора</label>
                                     <input type="time" id="collection-time" value="08:30" 
                                            class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                 </div>
                                 <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                                     <p class="text-sm text-blue-300">
                                         <i class="fas fa-info-circle mr-2"></i>
-                                        News will be collected daily at this time
+                                        Новости будут собираться ежедневно в это время
                                     </p>
                                 </div>
                             </div>
@@ -473,11 +569,11 @@
                         
                         <!-- Publication Count -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Publications per Day</h3>
+                            <h3 class="text-lg font-semibold mb-4">Публикаций в день</h3>
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
-                                        Number of publications
+                                        Количество публикаций
                                         <span id="pub-count-display" class="ml-2 text-purple-400 font-mono">7</span>
                                     </label>
                                     <input type="range" id="publications-count" min="1" max="24" value="7"
@@ -495,7 +591,7 @@
                     
                     <!-- Publication Times Grid -->
                     <div class="rounded-2xl glass p-6">
-                        <h3 class="text-lg font-semibold mb-4">Publication Times</h3>
+                        <h3 class="text-lg font-semibold mb-4">Время публикаций</h3>
                         <div id="publication-times-grid" class="grid grid-cols-4 gap-3">
                             <!-- Time inputs will be generated dynamically -->
                         </div>
@@ -505,26 +601,26 @@
                 <!-- Content Section -->
                 <section id="content-section" class="space-y-6 hidden">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-3xl font-bold">Content Settings</h2>
+                        <h2 class="text-3xl font-bold">Настройки контента</h2>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-6">
                         <!-- Text Content -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Text Configuration</h3>
+                            <h3 class="text-lg font-semibold mb-4">Настройки текста</h3>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">News per day</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Новостей в день</label>
                                     <input type="number" id="news-per-day" value="7" min="1" max="20"
                                            class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Min content length</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Минимальная длина текста</label>
                                     <input type="number" id="min-content" value="50" min="10"
                                            class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Max content length</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Максимальная длина текста</label>
                                     <input type="number" id="max-content" value="1500" max="4000"
                                            class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                 </div>
@@ -533,22 +629,76 @@
                         
                         <!-- Image Settings -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Image Generation</h3>
+                            <h3 class="text-lg font-semibold mb-4">Генерация изображений</h3>
                             <div class="space-y-4">
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" id="generate-images" checked class="w-5 h-5 rounded">
-                                    <span>Generate comic images</span>
+                                    <span>Генерировать комиксы</span>
                                 </label>
                                 <label class="flex items-center gap-3 cursor-pointer">
                                     <input type="checkbox" id="publish-without-images" class="w-5 h-5 rounded">
-                                    <span>Publish without images if generation fails</span>
+                                    <span>Публиковать без изображений при сбое</span>
                                 </label>
                                 <div class="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
                                     <p class="text-sm text-yellow-300">
                                         <i class="fas fa-exclamation-triangle mr-2"></i>
-                                        Image generation takes ~3 min per image
+                                        Генерация изображения занимает ~3 минуты
                                     </p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timezone and System Settings -->
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Часовой пояс</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Часовой пояс системы
+                                        <span class="ml-2 text-gray-500 cursor-help" title="Все расписания работают в этом часовом поясе">
+                                            <i class="fas fa-question-circle text-xs"></i>
+                                        </span>
+                                    </label>
+                                    <select id="user-timezone" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                        <option value="Europe/Moscow" selected>Москва (MSK)</option>
+                                        <option value="Europe/Kaliningrad">Калининград (MSK-1)</option>
+                                        <option value="Europe/Samara">Самара (MSK+1)</option>
+                                        <option value="Asia/Yekaterinburg">Екатеринбург (MSK+2)</option>
+                                        <option value="Asia/Omsk">Омск (MSK+3)</option>
+                                        <option value="Asia/Krasnoyarsk">Красноярск (MSK+4)</option>
+                                        <option value="Asia/Irkutsk">Иркутск (MSK+5)</option>
+                                        <option value="Asia/Yakutsk">Якутск (MSK+6)</option>
+                                        <option value="Asia/Vladivostok">Владивосток (MSK+7)</option>
+                                        <option value="Asia/Magadan">Магадан (MSK+8)</option>
+                                        <option value="Asia/Kamchatka">Камчатка (MSK+9)</option>
+                                    </select>
+                                </div>
+                                <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                    <p class="text-sm text-blue-300">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        Текущее время: <span id="current-time" class="font-mono"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Системные настройки</h3>
+                            <div class="space-y-4">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="debug-mode" class="w-5 h-5 rounded">
+                                    <span>Режим отладки</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="dry-run" class="w-5 h-5 rounded">
+                                    <span>Тестовый режим (без публикации)</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="auto-retry" checked class="w-5 h-5 rounded">
+                                    <span>Автоматическая повторная попытка при ошибках</span>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -557,16 +707,16 @@
                 <!-- Prompts Section -->
                 <section id="prompts-section" class="space-y-6 hidden">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-3xl font-bold">AI Prompts</h2>
+                        <h2 class="text-3xl font-bold">AI Промпты</h2>
                         <button class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
-                            <i class="fas fa-undo mr-2"></i>Reset to defaults
+                            <i class="fas fa-undo mr-2"></i>Сбросить на дефолтные
                         </button>
                     </div>
                     
                     <div class="space-y-6">
                         <!-- System Prompt -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Perplexity System Prompt</h3>
+                            <h3 class="text-lg font-semibold mb-4">Системный промпт Perplexity</h3>
                             <textarea id="perplexity-system-prompt" rows="4"
                                       class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"
                                       placeholder="System instructions for Perplexity..."></textarea>
@@ -574,7 +724,7 @@
                         
                         <!-- Collection Prompt -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">News Collection Prompt</h3>
+                            <h3 class="text-lg font-semibold mb-4">Промпт сбора новостей</h3>
                             <textarea id="perplexity-collection-prompt" rows="8"
                                       class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"
                                       placeholder="Instructions for collecting news..."></textarea>
@@ -582,7 +732,7 @@
                         
                         <!-- Comic Prompt -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Comic Generation Prompt</h3>
+                            <h3 class="text-lg font-semibold mb-4">Промпт генерации комиксов</h3>
                             <textarea id="openai-comic-prompt" rows="6"
                                       class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"
                                       placeholder="Instructions for generating comics..."></textarea>
@@ -593,7 +743,7 @@
                 <!-- API Keys Section -->
                 <section id="keys-section" class="space-y-6 hidden">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-3xl font-bold">API Keys</h2>
+                        <h2 class="text-3xl font-bold">API Ключи</h2>
                     </div>
                     
                     <!-- Security Warning -->
@@ -601,9 +751,9 @@
                         <div class="flex items-start gap-3">
                             <i class="fas fa-shield-alt text-red-400 mt-1"></i>
                             <div>
-                                <h4 class="font-semibold text-red-300">Security Notice</h4>
+                                <h4 class="font-semibold text-red-300">Уведомление о безопасности</h4>
                                 <p class="text-sm text-red-300/80 mt-1">
-                                    Keep your API keys secure. Never share them publicly or commit them to version control.
+                                    Храните ваши API ключи в безопасности. Никогда не публикуйте их и не сохраняйте в репозитории.
                                 </p>
                             </div>
                         </div>
@@ -646,11 +796,11 @@
                         
                         <!-- Telegram Credentials -->
                         <div class="rounded-2xl glass p-6">
-                            <h3 class="text-lg font-semibold mb-4">Telegram Configuration</h3>
+                            <h3 class="text-lg font-semibold mb-4">Настройки Telegram</h3>
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
-                                        Bot Token
+                                        Токен бота
                                         <a href="https://t.me/BotFather" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300">
                                             <i class="fas fa-external-link-alt text-xs"></i>
                                         </a>
@@ -664,7 +814,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Channel ID</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">ID канала</label>
                                     <input type="text" id="telegram-channel" placeholder="@имя_канала или -100123456789"
                                            class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                 </div>
@@ -679,15 +829,15 @@
     <!-- New Profile Modal -->
     <div id="newProfileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
         <div class="bg-gray-800 rounded-2xl p-6 w-96 glass-dark">
-            <h3 class="text-xl font-semibold mb-4">Create New Profile</h3>
-            <input type="text" id="newProfileName" placeholder="Enter profile name..."
+            <h3 class="text-xl font-semibold mb-4">Создать новый профиль</h3>
+            <input type="text" id="newProfileName" placeholder="Введите название профиля..."
                    class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none mb-4">
             <div class="flex gap-3">
                 <button onclick="closeModal()" class="flex-1 px-4 py-2 rounded-xl glass hover:bg-white/10 transition-all">
-                    Cancel
+                    Отмена
                 </button>
                 <button onclick="createProfile()" class="flex-1 px-4 py-2 rounded-xl gradient-primary text-white hover:opacity-90 transition-all">
-                    Create
+                    Создать
                 </button>
             </div>
         </div>
@@ -706,7 +856,28 @@
             loadConfiguration();
             setupEventListeners();
             updateTimelineMarkers();
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
         });
+        
+        // Update current time display
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ru-RU', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                timeZone: document.getElementById('user-timezone')?.value || 'Europe/Moscow'
+            });
+            const dateString = now.toLocaleDateString('ru-RU', {
+                timeZone: document.getElementById('user-timezone')?.value || 'Europe/Moscow'
+            });
+            
+            const currentTimeEl = document.getElementById('current-time');
+            if (currentTimeEl) {
+                currentTimeEl.textContent = `${dateString} ${timeString}`;
+            }
+        }
         
         // Setup event listeners
         function setupEventListeners() {
@@ -799,14 +970,34 @@
             // Perplexity settings
             document.getElementById('perplexity-model').value = currentConfig.api_models?.perplexity?.model || 'sonar-deep-research';
             document.getElementById('perplexity-max-tokens').value = currentConfig.api_models?.perplexity?.max_tokens || 8192;
-            document.getElementById('perplexity-temperature').value = currentConfig.api_models?.perplexity?.temperature || 0.7;
+            
+            const tempValue = currentConfig.api_models?.perplexity?.temperature || 0.7;
+            document.getElementById('perplexity-temperature').value = tempValue;
+            document.getElementById('temp-value').textContent = tempValue;
+            
+            const topPValue = currentConfig.api_models?.perplexity?.top_p || 0.9;
+            document.getElementById('perplexity-top-p').value = topPValue;
+            document.getElementById('top-p-value').textContent = topPValue;
+            
+            const presenceValue = currentConfig.api_models?.perplexity?.presence_penalty || 0.1;
+            document.getElementById('perplexity-presence-penalty').value = presenceValue;
+            document.getElementById('presence-value').textContent = presenceValue;
+            
+            const frequencyValue = currentConfig.api_models?.perplexity?.frequency_penalty || 0.1;
+            document.getElementById('perplexity-frequency-penalty').value = frequencyValue;
+            document.getElementById('frequency-value').textContent = frequencyValue;
             document.getElementById('search-depth').value = currentConfig.api_models?.perplexity?.search_depth || 'high';
             document.getElementById('search-recency').value = currentConfig.api_models?.perplexity?.search_recency_filter || 'day';
+            document.getElementById('perplexity-citations').checked = currentConfig.api_models?.perplexity?.return_citations !== false;
+            document.getElementById('perplexity-domains').value = currentConfig.api_models?.perplexity?.domains?.join('\n') || '';
             
             // OpenAI settings
             document.getElementById('openai-model').value = currentConfig.api_models?.openai?.model || 'dall-e-3';
             document.getElementById('openai-size').value = currentConfig.api_models?.openai?.image_size || '1024x1024';
             document.getElementById('openai-quality').value = currentConfig.api_models?.openai?.image_quality || 'standard';
+            if (document.getElementById('openai-style')) {
+                document.getElementById('openai-style').value = currentConfig.api_models?.openai?.style || 'vivid';
+            }
             
             // Schedule
             document.getElementById('collection-time').value = currentConfig.schedule?.collection_time || '08:30';
@@ -819,6 +1010,12 @@
             document.getElementById('max-content').value = currentConfig.content?.max_content_length || 1500;
             document.getElementById('generate-images').checked = currentConfig.content?.generate_images !== false;
             document.getElementById('publish-without-images').checked = currentConfig.content?.publish_without_images === true;
+            
+            // System settings
+            document.getElementById('user-timezone').value = currentConfig.system?.timezone || 'Europe/Moscow';
+            document.getElementById('debug-mode').checked = currentConfig.system?.debug_mode === true;
+            document.getElementById('dry-run').checked = currentConfig.system?.dry_run === true;
+            document.getElementById('auto-retry').checked = currentConfig.system?.auto_retry !== false;
             
             // Prompts
             document.getElementById('perplexity-system-prompt').value = currentPrompts.perplexity_system || '';
@@ -854,9 +1051,15 @@
             const model = document.getElementById('openai-model').value;
             const sizeSelect = document.getElementById('openai-size');
             const qualitySelect = document.getElementById('openai-quality');
+            const styleSelector = document.getElementById('style-selector');
             
             sizeSelect.innerHTML = '';
             qualitySelect.innerHTML = '';
+            
+            // Show/hide style selector for DALL-E 3
+            if (styleSelector) {
+                styleSelector.style.display = (model === 'dall-e-3') ? 'block' : 'none';
+            }
             
             if (model === 'dall-e-2') {
                 ['256x256', '512x512', '1024x1024'].forEach(size => {
@@ -1051,13 +1254,19 @@
                             model: document.getElementById('perplexity-model').value,
                             max_tokens: parseInt(document.getElementById('perplexity-max-tokens').value),
                             temperature: parseFloat(document.getElementById('perplexity-temperature').value),
+                            top_p: parseFloat(document.getElementById('perplexity-top-p').value),
+                            presence_penalty: parseFloat(document.getElementById('perplexity-presence-penalty').value),
+                            frequency_penalty: parseFloat(document.getElementById('perplexity-frequency-penalty').value),
                             search_depth: document.getElementById('search-depth').value,
-                            search_recency_filter: document.getElementById('search-recency').value || null
+                            search_recency_filter: document.getElementById('search-recency').value || null,
+                            return_citations: document.getElementById('perplexity-citations').checked,
+                            domains: document.getElementById('perplexity-domains').value.split('\n').filter(d => d.trim())
                         },
                         openai: {
                             model: document.getElementById('openai-model').value,
                             image_size: document.getElementById('openai-size').value,
-                            image_quality: document.getElementById('openai-quality').value
+                            image_quality: document.getElementById('openai-quality').value,
+                            style: document.getElementById('openai-style')?.value || 'vivid'
                         }
                     },
                     schedule: {
@@ -1071,6 +1280,12 @@
                         max_content_length: parseInt(document.getElementById('max-content').value),
                         generate_images: document.getElementById('generate-images').checked,
                         publish_without_images: document.getElementById('publish-without-images').checked
+                    },
+                    system: {
+                        timezone: document.getElementById('user-timezone').value,
+                        debug_mode: document.getElementById('debug-mode').checked,
+                        dry_run: document.getElementById('dry-run').checked,
+                        auto_retry: document.getElementById('auto-retry').checked
                     }
                 };
                 

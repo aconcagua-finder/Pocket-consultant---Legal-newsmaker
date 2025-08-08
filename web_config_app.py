@@ -760,8 +760,16 @@ config_manager = ConfigManager()
 def index():
     """Главная страница с формами настроек"""
     validation = config_manager.validate_config()
-    # Используем новый шаблон
-    return render_template('config_new.html', 
+    
+    # Определяем, какой шаблон использовать
+    template_name = 'config_modern.html'  # Используем новый современный шаблон
+    
+    # Проверяем существование шаблона
+    template_path = Path('templates') / template_name
+    if not template_path.exists():
+        template_name = 'config_new.html'  # Fallback на старый шаблон
+    
+    return render_template(template_name, 
                          config=config_manager.config,
                          prompts=config_manager.prompts,
                          profiles=list(config_manager.profiles.keys()),
