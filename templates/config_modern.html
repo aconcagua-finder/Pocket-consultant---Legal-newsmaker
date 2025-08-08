@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEWSMAKER Control Panel</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'gradient': 'gradient 8s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        gradient: {
+                            '0%, 100%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #8b5cf6, #3b82f6);
+            border-radius: 4px;
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Gradient backgrounds */
+        .gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .gradient-mesh {
+            background-image: 
+                radial-gradient(at 20% 80%, rgb(120, 119, 198) 0, transparent 50%),
+                radial-gradient(at 80% 20%, rgb(255, 119, 198) 0, transparent 50%),
+                radial-gradient(at 40% 40%, rgb(120, 219, 255) 0, transparent 50%);
+            background-size: 200% 200%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        /* Timeline styles */
+        .timeline-track {
+            background: linear-gradient(90deg, 
+                rgba(59, 130, 246, 0.1) 0%, 
+                rgba(139, 92, 246, 0.1) 50%, 
+                rgba(236, 72, 153, 0.1) 100%);
+        }
+        
+        .timeline-marker {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: grab;
+        }
+        
+        .timeline-marker:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+        
+        .timeline-marker.dragging {
+            opacity: 0.5;
+            transform: scale(1.2);
+        }
+        
+        /* Glow effects */
+        .glow-primary {
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+        }
+        
+        .text-glow {
+            text-shadow: 0 0 20px currentColor;
+        }
+        
+        /* Card hover effects */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Input styles */
+        .input-modern {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .input-modern:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        /* Priority colors */
+        .priority-1 { background: #ef4444; }
+        .priority-2 { background: #f97316; }
+        .priority-3 { background: #eab308; }
+        .priority-4 { background: #22c55e; }
+        .priority-5 { background: #3b82f6; }
+        .priority-6 { background: #8b5cf6; }
+        .priority-7 { background: #6b7280; }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-900 text-white overflow-x-hidden">
+    <!-- Animated gradient background -->
+    <div class="fixed inset-0 gradient-mesh opacity-30"></div>
+    
+    <!-- Main container -->
+    <div class="relative z-10">
+        <!-- Header -->
+        <header class="glass-dark border-b border-white/10">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <!-- Logo and title -->
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-lg animate-float">
+                            <i class="fas fa-rocket text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                                NEWSMAKER
+                            </h1>
+                            <p class="text-xs text-gray-400">Control Panel v2.0</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile selector -->
+                    <div class="flex items-center gap-4">
+                        <!-- Status indicator -->
+                        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full glass">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <span class="text-xs text-gray-300">System Active</span>
+                        </div>
+                        
+                        <!-- Profile dropdown -->
+                        <div class="relative">
+                            <button id="profileDropdown" class="flex items-center gap-3 px-4 py-2 rounded-xl glass hover:bg-white/10 transition-all">
+                                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                    <i class="fas fa-user text-white text-sm"></i>
+                                </div>
+                                <span class="font-medium" id="currentProfileName">Pocket Consultant</span>
+                                <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                            </button>
+                            
+                            <!-- Dropdown menu -->
+                            <div id="profileMenu" class="absolute right-0 mt-2 w-64 rounded-xl glass-dark shadow-2xl hidden">
+                                <div class="p-2">
+                                    <div id="profilesList" class="space-y-1">
+                                        <!-- Profiles will be loaded here -->
+                                    </div>
+                                    <div class="border-t border-white/10 mt-2 pt-2">
+                                        <button onclick="showNewProfileModal()" class="w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 transition-all flex items-center gap-2">
+                                            <i class="fas fa-plus text-sm"></i>
+                                            <span>Create New Profile</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main layout -->
+        <div class="flex">
+            <!-- Sidebar -->
+            <aside class="w-64 min-h-screen glass-dark border-r border-white/10">
+                <nav class="p-4 space-y-2">
+                    <button class="nav-item active w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="api">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <i class="fas fa-plug text-blue-400"></i>
+                        </div>
+                        <span>API Settings</span>
+                    </button>
+                    
+                    <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="schedule">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                            <i class="fas fa-clock text-purple-400"></i>
+                        </div>
+                        <span>Schedule</span>
+                        <span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-300">New</span>
+                    </button>
+                    
+                    <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="content">
+                        <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+                            <i class="fas fa-file-alt text-green-400"></i>
+                        </div>
+                        <span>Content</span>
+                    </button>
+                    
+                    <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="prompts">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                            <i class="fas fa-comment-dots text-yellow-400"></i>
+                        </div>
+                        <span>Prompts</span>
+                    </button>
+                    
+                    <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="keys">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                            <i class="fas fa-key text-red-400"></i>
+                        </div>
+                        <span>API Keys</span>
+                    </button>
+                </nav>
+                
+                <!-- Bottom actions -->
+                <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+                    <button onclick="saveConfiguration()" class="w-full px-4 py-3 rounded-xl gradient-primary text-white font-medium hover:opacity-90 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-save"></i>
+                        <span>Save Changes</span>
+                    </button>
+                </div>
+            </aside>
+            
+            <!-- Main content area -->
+            <main class="flex-1 p-6 max-w-6xl">
+                <!-- Notifications container -->
+                <div id="notifications" class="fixed top-20 right-6 z-50 space-y-2"></div>
+                
+                <!-- API Settings Section -->
+                <section id="api-section" class="space-y-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold">API Configuration</h2>
+                        <div class="flex gap-2">
+                            <button class="px-3 py-1.5 rounded-lg glass text-sm hover:bg-white/10 transition-all">
+                                <i class="fas fa-info-circle mr-2"></i>Documentation
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Perplexity Card -->
+                    <div class="rounded-2xl glass p-6 card-hover">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                                <i class="fas fa-brain text-white"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold">Perplexity API</h3>
+                            <span class="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300">
+                                <i class="fas fa-check-circle mr-1"></i>Connected
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Model selector -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Model
+                                    <span class="ml-2 text-xs text-gray-500">(Deep Research recommended)</span>
+                                </label>
+                                <select id="perplexity-model" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updatePerplexityFields()">
+                                    <option value="sonar">Sonar (4K tokens)</option>
+                                    <option value="sonar-pro">Sonar Pro (8K tokens)</option>
+                                    <option value="sonar-reasoning">Sonar Reasoning (8K tokens)</option>
+                                    <option value="sonar-reasoning-pro">Sonar Reasoning Pro (12K tokens)</option>
+                                    <option value="sonar-deep-research" selected>Sonar Deep Research (16K tokens)</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Max tokens -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Max Tokens
+                                    <span id="token-limit" class="ml-2 px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-300">16,384 limit</span>
+                                </label>
+                                <input type="number" id="perplexity-max-tokens" value="8192" min="1" max="16384" 
+                                       class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                            </div>
+                            
+                            <!-- Temperature slider -->
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">
+                                    Temperature
+                                    <span id="temp-value" class="ml-2 text-purple-400 font-mono">0.7</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="range" id="perplexity-temperature" min="0" max="2" step="0.1" value="0.7"
+                                           class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                           oninput="document.getElementById('temp-value').textContent = this.value">
+                                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                        <span>Precise</span>
+                                        <span>Balanced</span>
+                                        <span>Creative</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Search depth (for deep research) -->
+                            <div id="deep-research-options" class="col-span-2 grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Search Depth
+                                        <i class="fas fa-info-circle text-xs text-gray-500 ml-1"></i>
+                                    </label>
+                                    <select id="search-depth" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                        <option value="low">Low (10-20 sources)</option>
+                                        <option value="medium">Medium (30-50 sources)</option>
+                                        <option value="high" selected>High (100+ sources)</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Recency Filter
+                                        <i class="fas fa-info-circle text-xs text-gray-500 ml-1"></i>
+                                    </label>
+                                    <select id="search-recency" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                        <option value="">No limit</option>
+                                        <option value="hour">Last hour</option>
+                                        <option value="day" selected>Last day</option>
+                                        <option value="week">Last week</option>
+                                        <option value="month">Last month</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- OpenAI Card -->
+                    <div class="rounded-2xl glass p-6 card-hover">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
+                                <i class="fas fa-image text-white"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold">OpenAI Image Generation</h3>
+                            <span id="price-badge" class="ml-auto px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300">
+                                <i class="fas fa-dollar-sign mr-1"></i>$0.08 per image
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                                <select id="openai-model" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updateOpenAIOptions()">
+                                    <option value="dall-e-2">DALL-E 2</option>
+                                    <option value="dall-e-3" selected>DALL-E 3</option>
+                                    <option value="gpt-image-1">GPT-Image-1 (4K)</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Size</label>
+                                <select id="openai-size" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                    <option value="1024x1024">1024x1024</option>
+                                    <option value="1024x1792">1024x1792</option>
+                                    <option value="1792x1024">1792x1024</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Quality</label>
+                                <select id="openai-quality" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updateOpenAIPrice()">
+                                    <option value="standard">Standard</option>
+                                    <option value="hd">HD</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Schedule Section -->
+                <section id="schedule-section" class="space-y-6 hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold">Publication Schedule</h2>
+                        <div class="flex gap-2">
+                            <button onclick="autoDistributeSchedule()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
+                                <i class="fas fa-magic mr-2"></i>Auto-distribute
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Visual Timeline -->
+                    <div class="rounded-2xl glass p-6">
+                        <h3 class="text-lg font-semibold mb-4">Daily Timeline</h3>
+                        
+                        <!-- Timeline visualization -->
+                        <div class="relative h-32 rounded-xl timeline-track p-4">
+                            <!-- Hour markers -->
+                            <div class="absolute inset-x-4 top-2 flex justify-between text-xs text-gray-400">
+                                <span>00:00</span>
+                                <span>06:00</span>
+                                <span>12:00</span>
+                                <span>18:00</span>
+                                <span>24:00</span>
+                            </div>
+                            
+                            <!-- Collection time marker -->
+                            <div id="collection-marker" class="absolute top-12 w-1 h-16 bg-blue-500 rounded-full" style="left: 35%;">
+                                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded bg-blue-500 text-xs whitespace-nowrap">
+                                    Collection
+                                </div>
+                            </div>
+                            
+                            <!-- Publication markers container -->
+                            <div id="timeline-markers" class="absolute inset-x-4 top-12">
+                                <!-- Markers will be added dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Schedule Configuration -->
+                    <div class="grid grid-cols-2 gap-6">
+                        <!-- Collection Time -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Collection Time</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Daily collection time</label>
+                                    <input type="time" id="collection-time" value="08:30" 
+                                           class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                </div>
+                                <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                    <p class="text-sm text-blue-300">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        News will be collected daily at this time
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Publication Count -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Publications per Day</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Number of publications
+                                        <span id="pub-count-display" class="ml-2 text-purple-400 font-mono">7</span>
+                                    </label>
+                                    <input type="range" id="publications-count" min="1" max="24" value="7"
+                                           class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                           oninput="updatePublicationsCount()">
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>1</span>
+                                    <span>12</span>
+                                    <span>24</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Publication Times Grid -->
+                    <div class="rounded-2xl glass p-6">
+                        <h3 class="text-lg font-semibold mb-4">Publication Times</h3>
+                        <div id="publication-times-grid" class="grid grid-cols-4 gap-3">
+                            <!-- Time inputs will be generated dynamically -->
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Content Section -->
+                <section id="content-section" class="space-y-6 hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold">Content Settings</h2>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-6">
+                        <!-- Text Content -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Text Configuration</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">News per day</label>
+                                    <input type="number" id="news-per-day" value="7" min="1" max="20"
+                                           class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Min content length</label>
+                                    <input type="number" id="min-content" value="50" min="10"
+                                           class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Max content length</label>
+                                    <input type="number" id="max-content" value="1500" max="4000"
+                                           class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Image Settings -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Image Generation</h3>
+                            <div class="space-y-4">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="generate-images" checked class="w-5 h-5 rounded">
+                                    <span>Generate comic images</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="publish-without-images" class="w-5 h-5 rounded">
+                                    <span>Publish without images if generation fails</span>
+                                </label>
+                                <div class="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                                    <p class="text-sm text-yellow-300">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                                        Image generation takes ~3 min per image
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Prompts Section -->
+                <section id="prompts-section" class="space-y-6 hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold">AI Prompts</h2>
+                        <button class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
+                            <i class="fas fa-undo mr-2"></i>Reset to defaults
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- System Prompt -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Perplexity System Prompt</h3>
+                            <textarea id="perplexity-system-prompt" rows="4"
+                                      class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"
+                                      placeholder="System instructions for Perplexity..."></textarea>
+                        </div>
+                        
+                        <!-- Collection Prompt -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">News Collection Prompt</h3>
+                            <textarea id="perplexity-collection-prompt" rows="8"
+                                      class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"
+                                      placeholder="Instructions for collecting news..."></textarea>
+                        </div>
+                        
+                        <!-- Comic Prompt -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Comic Generation Prompt</h3>
+                            <textarea id="openai-comic-prompt" rows="6"
+                                      class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"
+                                      placeholder="Instructions for generating comics..."></textarea>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- API Keys Section -->
+                <section id="keys-section" class="space-y-6 hidden">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-bold">API Keys</h2>
+                    </div>
+                    
+                    <!-- Security Warning -->
+                    <div class="rounded-2xl bg-red-500/10 border border-red-500/20 p-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-shield-alt text-red-400 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-red-300">Security Notice</h4>
+                                <p class="text-sm text-red-300/80 mt-1">
+                                    Keep your API keys secure. Never share them publicly or commit them to version control.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Perplexity Key -->
+                        <div class="rounded-2xl glass p-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Perplexity API Key
+                                <a href="https://perplexity.ai/settings/api" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-external-link-alt text-xs"></i>
+                                </a>
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="perplexity-key" placeholder="pplx-xxxxxxxxxxxxxxxx"
+                                       class="w-full px-4 py-2.5 pr-12 rounded-xl input-modern text-white focus:outline-none">
+                                <button onclick="togglePasswordVisibility('perplexity-key')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- OpenAI Key -->
+                        <div class="rounded-2xl glass p-6">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                OpenAI API Key
+                                <a href="https://platform.openai.com/api-keys" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-external-link-alt text-xs"></i>
+                                </a>
+                            </label>
+                            <div class="relative">
+                                <input type="password" id="openai-key" placeholder="sk-xxxxxxxxxxxxxxxx"
+                                       class="w-full px-4 py-2.5 pr-12 rounded-xl input-modern text-white focus:outline-none">
+                                <button onclick="togglePasswordVisibility('openai-key')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Telegram Credentials -->
+                        <div class="rounded-2xl glass p-6">
+                            <h3 class="text-lg font-semibold mb-4">Telegram Configuration</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                                        Bot Token
+                                        <a href="https://t.me/BotFather" target="_blank" class="ml-2 text-blue-400 hover:text-blue-300">
+                                            <i class="fas fa-external-link-alt text-xs"></i>
+                                        </a>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="password" id="telegram-token" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+                                               class="w-full px-4 py-2.5 pr-12 rounded-xl input-modern text-white focus:outline-none">
+                                        <button onclick="togglePasswordVisibility('telegram-token')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Channel ID</label>
+                                    <input type="text" id="telegram-channel" placeholder="@имя_канала или -100123456789"
+                                           class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+    
+    <!-- New Profile Modal -->
+    <div id="newProfileModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-2xl p-6 w-96 glass-dark">
+            <h3 class="text-xl font-semibold mb-4">Create New Profile</h3>
+            <input type="text" id="newProfileName" placeholder="Enter profile name..."
+                   class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none mb-4">
+            <div class="flex gap-3">
+                <button onclick="closeModal()" class="flex-1 px-4 py-2 rounded-xl glass hover:bg-white/10 transition-all">
+                    Cancel
+                </button>
+                <button onclick="createProfile()" class="flex-1 px-4 py-2 rounded-xl gradient-primary text-white hover:opacity-90 transition-all">
+                    Create
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let currentConfig = {};
+        let currentPrompts = {};
+        let profiles = [];
+        let currentProfile = 'Pocket Consultant';
+        let draggedMarker = null;
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfiguration();
+            setupEventListeners();
+            updateTimelineMarkers();
+        });
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const section = e.currentTarget.dataset.section;
+                    switchSection(section);
+                });
+            });
+            
+            // Profile dropdown
+            document.getElementById('profileDropdown').addEventListener('click', () => {
+                document.getElementById('profileMenu').classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#profileDropdown') && !e.target.closest('#profileMenu')) {
+                    document.getElementById('profileMenu').classList.add('hidden');
+                }
+            });
+        }
+        
+        // Switch between sections
+        function switchSection(section) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('active', 'bg-white/10');
+                if (btn.dataset.section === section) {
+                    btn.classList.add('active', 'bg-white/10');
+                }
+            });
+            
+            // Update sections
+            document.querySelectorAll('section').forEach(sec => {
+                sec.classList.add('hidden');
+            });
+            document.getElementById(`${section}-section`).classList.remove('hidden');
+            
+            // Update timeline if switching to schedule
+            if (section === 'schedule') {
+                updateTimelineMarkers();
+            }
+        }
+        
+        // Load configuration
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/config');
+                const data = await response.json();
+                
+                currentConfig = data.config;
+                currentPrompts = data.prompts;
+                profiles = data.profiles || ['Pocket Consultant'];
+                currentProfile = data.current_profile || 'Pocket Consultant';
+                
+                updateProfilesList();
+                populateForms();
+                
+                if (data.validation) {
+                    showValidation(data.validation);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка загрузки конфигурации: ' + error.message);
+            }
+        }
+        
+        // Update profiles list
+        function updateProfilesList() {
+            const container = document.getElementById('profilesList');
+            container.innerHTML = '';
+            
+            profiles.forEach(profile => {
+                const item = document.createElement('button');
+                item.className = 'w-full text-left px-3 py-2 rounded-lg hover:bg-white/10 transition-all flex items-center justify-between';
+                item.innerHTML = `
+                    <span>${profile}</span>
+                    ${profile === currentProfile ? '<i class="fas fa-check text-green-400 text-sm"></i>' : ''}
+                `;
+                item.onclick = () => loadProfile(profile);
+                container.appendChild(item);
+            });
+            
+            document.getElementById('currentProfileName').textContent = currentProfile;
+        }
+        
+        // Populate forms with data
+        function populateForms() {
+            // Perplexity settings
+            document.getElementById('perplexity-model').value = currentConfig.api_models?.perplexity?.model || 'sonar-deep-research';
+            document.getElementById('perplexity-max-tokens').value = currentConfig.api_models?.perplexity?.max_tokens || 8192;
+            document.getElementById('perplexity-temperature').value = currentConfig.api_models?.perplexity?.temperature || 0.7;
+            document.getElementById('search-depth').value = currentConfig.api_models?.perplexity?.search_depth || 'high';
+            document.getElementById('search-recency').value = currentConfig.api_models?.perplexity?.search_recency_filter || 'day';
+            
+            // OpenAI settings
+            document.getElementById('openai-model').value = currentConfig.api_models?.openai?.model || 'dall-e-3';
+            document.getElementById('openai-size').value = currentConfig.api_models?.openai?.image_size || '1024x1024';
+            document.getElementById('openai-quality').value = currentConfig.api_models?.openai?.image_quality || 'standard';
+            
+            // Schedule
+            document.getElementById('collection-time').value = currentConfig.schedule?.collection_time || '08:30';
+            document.getElementById('publications-count').value = currentConfig.schedule?.publications_per_day || 7;
+            updatePublicationsCount();
+            
+            // Content
+            document.getElementById('news-per-day').value = currentConfig.content?.max_news_per_day || 7;
+            document.getElementById('min-content').value = currentConfig.content?.min_content_length || 50;
+            document.getElementById('max-content').value = currentConfig.content?.max_content_length || 1500;
+            document.getElementById('generate-images').checked = currentConfig.content?.generate_images !== false;
+            document.getElementById('publish-without-images').checked = currentConfig.content?.publish_without_images === true;
+            
+            // Prompts
+            document.getElementById('perplexity-system-prompt').value = currentPrompts.perplexity_system || '';
+            document.getElementById('perplexity-collection-prompt').value = currentPrompts.perplexity_collection || '';
+            document.getElementById('openai-comic-prompt').value = currentPrompts.openai_comic || '';
+            
+            updatePerplexityFields();
+            updateOpenAIOptions();
+        }
+        
+        // Update Perplexity fields based on model
+        function updatePerplexityFields() {
+            const model = document.getElementById('perplexity-model').value;
+            const tokenLimits = {
+                'sonar': 4096,
+                'sonar-pro': 8192,
+                'sonar-reasoning': 8192,
+                'sonar-reasoning-pro': 12000,
+                'sonar-deep-research': 16384
+            };
+            
+            const limit = tokenLimits[model] || 8192;
+            document.getElementById('perplexity-max-tokens').max = limit;
+            document.getElementById('token-limit').textContent = `${limit.toLocaleString()} limit`;
+            
+            // Show/hide deep research options
+            document.getElementById('deep-research-options').style.display = 
+                model === 'sonar-deep-research' ? 'grid' : 'none';
+        }
+        
+        // Update OpenAI options based on model
+        function updateOpenAIOptions() {
+            const model = document.getElementById('openai-model').value;
+            const sizeSelect = document.getElementById('openai-size');
+            const qualitySelect = document.getElementById('openai-quality');
+            
+            sizeSelect.innerHTML = '';
+            qualitySelect.innerHTML = '';
+            
+            if (model === 'dall-e-2') {
+                ['256x256', '512x512', '1024x1024'].forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                qualitySelect.innerHTML = '<option value="standard">Standard</option>';
+            } else if (model === 'dall-e-3') {
+                ['1024x1024', '1024x1792', '1792x1024'].forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                qualitySelect.innerHTML = `
+                    <option value="standard">Standard</option>
+                    <option value="hd">HD</option>
+                `;
+            } else if (model === 'gpt-image-1') {
+                ['256x256', '512x512', '1024x1024', '2048x2048', '4096x4096'].forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size;
+                    option.textContent = size;
+                    sizeSelect.appendChild(option);
+                });
+                qualitySelect.innerHTML = `
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                `;
+            }
+            
+            updateOpenAIPrice();
+        }
+        
+        // Update OpenAI price indicator
+        function updateOpenAIPrice() {
+            const model = document.getElementById('openai-model').value;
+            const quality = document.getElementById('openai-quality').value;
+            const size = document.getElementById('openai-size').value;
+            
+            const prices = {
+                'dall-e-2': { 'standard': 0.02 },
+                'dall-e-3': { 'standard': 0.04, 'hd': 0.08 },
+                'gpt-image-1': { 'low': 0.02, 'medium': 0.07, 'high': 0.19 }
+            };
+            
+            let price = 0;
+            if (model === 'gpt-image-1') {
+                price = prices[model][quality] || 0.19;
+            } else {
+                price = prices[model]?.[quality] || 0.04;
+            }
+            
+            const badge = document.getElementById('price-badge');
+            badge.innerHTML = `<i class="fas fa-dollar-sign mr-1"></i>$${price.toFixed(2)} per image`;
+            
+            // Update color based on price
+            badge.className = 'ml-auto px-3 py-1 rounded-full text-xs font-medium ';
+            if (price > 0.1) {
+                badge.className += 'bg-red-500/20 text-red-300';
+            } else if (price > 0.05) {
+                badge.className += 'bg-yellow-500/20 text-yellow-300';
+            } else {
+                badge.className += 'bg-green-500/20 text-green-300';
+            }
+        }
+        
+        // Update publications count
+        function updatePublicationsCount() {
+            const count = parseInt(document.getElementById('publications-count').value);
+            document.getElementById('pub-count-display').textContent = count;
+            
+            const container = document.getElementById('publication-times-grid');
+            container.innerHTML = '';
+            
+            const pubTimes = currentConfig.schedule?.publication_times || [];
+            
+            for (let i = 1; i <= count; i++) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2';
+                
+                const badge = document.createElement('span');
+                badge.className = `w-8 h-8 rounded-lg priority-${i} flex items-center justify-center text-white font-semibold text-sm`;
+                badge.textContent = i;
+                
+                const input = document.createElement('input');
+                input.type = 'time';
+                input.id = `pub-time-${i}`;
+                input.className = 'flex-1 px-3 py-2 rounded-lg input-modern text-white focus:outline-none';
+                input.value = pubTimes[i-1] || '';
+                input.onchange = updateTimelineMarkers;
+                
+                div.appendChild(badge);
+                div.appendChild(input);
+                container.appendChild(div);
+            }
+            
+            updateTimelineMarkers();
+        }
+        
+        // Update timeline markers
+        function updateTimelineMarkers() {
+            const container = document.getElementById('timeline-markers');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const count = parseInt(document.getElementById('publications-count').value);
+            for (let i = 1; i <= count; i++) {
+                const timeInput = document.getElementById(`pub-time-${i}`);
+                if (timeInput && timeInput.value) {
+                    const [hours, minutes] = timeInput.value.split(':').map(Number);
+                    const position = ((hours * 60 + minutes) / 1440) * 100;
+                    
+                    const marker = document.createElement('div');
+                    marker.className = `timeline-marker absolute w-3 h-3 rounded-full priority-${i} cursor-pointer`;
+                    marker.style.left = `${position}%`;
+                    marker.style.transform = 'translateX(-50%)';
+                    marker.draggable = true;
+                    marker.dataset.index = i;
+                    
+                    // Drag events
+                    marker.addEventListener('dragstart', handleDragStart);
+                    marker.addEventListener('dragend', handleDragEnd);
+                    
+                    container.appendChild(marker);
+                }
+            }
+            
+            // Update collection marker
+            const collectionTime = document.getElementById('collection-time').value;
+            if (collectionTime) {
+                const [hours, minutes] = collectionTime.split(':').map(Number);
+                const position = ((hours * 60 + minutes) / 1440) * 100;
+                document.getElementById('collection-marker').style.left = `${position}%`;
+            }
+        }
+        
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedMarker = e.target;
+            e.target.classList.add('dragging');
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedMarker = null;
+        }
+        
+        // Auto-distribute schedule
+        async function autoDistributeSchedule() {
+            const count = parseInt(document.getElementById('publications-count').value);
+            const startHour = 9;
+            const endHour = 21;
+            const interval = (endHour - startHour) * 60 / count;
+            
+            for (let i = 1; i <= count; i++) {
+                const minutes = startHour * 60 + interval * (i - 1);
+                const hours = Math.floor(minutes / 60);
+                const mins = Math.floor(minutes % 60);
+                const timeStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                
+                const input = document.getElementById(`pub-time-${i}`);
+                if (input) {
+                    input.value = timeStr;
+                }
+            }
+            
+            updateTimelineMarkers();
+            showNotification('success', 'Расписание успешно авто-распределено');
+        }
+        
+        // Save configuration
+        async function saveConfiguration() {
+            try {
+                // Collect schedule times
+                const count = parseInt(document.getElementById('publications-count').value);
+                const publicationTimes = [];
+                for (let i = 1; i <= count; i++) {
+                    const input = document.getElementById(`pub-time-${i}`);
+                    if (input && input.value) {
+                        publicationTimes.push(input.value);
+                    }
+                }
+                
+                const config = {
+                    api_models: {
+                        perplexity: {
+                            model: document.getElementById('perplexity-model').value,
+                            max_tokens: parseInt(document.getElementById('perplexity-max-tokens').value),
+                            temperature: parseFloat(document.getElementById('perplexity-temperature').value),
+                            search_depth: document.getElementById('search-depth').value,
+                            search_recency_filter: document.getElementById('search-recency').value || null
+                        },
+                        openai: {
+                            model: document.getElementById('openai-model').value,
+                            image_size: document.getElementById('openai-size').value,
+                            image_quality: document.getElementById('openai-quality').value
+                        }
+                    },
+                    schedule: {
+                        collection_time: document.getElementById('collection-time').value,
+                        publications_per_day: count,
+                        publication_times: publicationTimes
+                    },
+                    content: {
+                        max_news_per_day: parseInt(document.getElementById('news-per-day').value),
+                        min_content_length: parseInt(document.getElementById('min-content').value),
+                        max_content_length: parseInt(document.getElementById('max-content').value),
+                        generate_images: document.getElementById('generate-images').checked,
+                        publish_without_images: document.getElementById('publish-without-images').checked
+                    }
+                };
+                
+                const prompts = {
+                    perplexity_system: document.getElementById('perplexity-system-prompt').value,
+                    perplexity_collection: document.getElementById('perplexity-collection-prompt').value,
+                    openai_comic: document.getElementById('openai-comic-prompt').value
+                };
+                
+                // Collect API keys if changed
+                const apiKeys = {};
+                const perplexityKey = document.getElementById('perplexity-key').value;
+                const openaiKey = document.getElementById('openai-key').value;
+                const telegramToken = document.getElementById('telegram-token').value;
+                const telegramChannel = document.getElementById('telegram-channel').value;
+                
+                if (perplexityKey && !perplexityKey.includes('*')) {
+                    apiKeys.PERPLEXITY_API_KEY = perplexityKey;
+                }
+                if (openaiKey && !openaiKey.includes('*')) {
+                    apiKeys.OPENAI_API_KEY = openaiKey;
+                }
+                if (telegramToken && !telegramToken.includes('*')) {
+                    apiKeys.TELEGRAM_BOT_TOKEN = telegramToken;
+                }
+                if (telegramChannel) {
+                    apiKeys.TELEGRAM_CHANNEL_ID = telegramChannel;
+                }
+                
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config, prompts, api_keys: apiKeys })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('success', 'Конфигурация успешно сохранена');
+                    if (result.validation) {
+                        showValidation(result.validation);
+                    }
+                } else {
+                    showNotification('error', 'Ошибка сохранения: ' + result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка: ' + error.message);
+            }
+        }
+        
+        // Profile management
+        async function loadProfile(profileName) {
+            try {
+                const response = await fetch('/api/profiles/load', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_name: profileName })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    currentConfig = result.config;
+                    currentPrompts = result.prompts;
+                    currentProfile = profileName;
+                    updateProfilesList();
+                    populateForms();
+                    document.getElementById('profileMenu').classList.add('hidden');
+                    showNotification('success', `Профиль "${profileName}" загружен`);
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка загрузки профиля: ' + error.message);
+            }
+        }
+        
+        function showNewProfileModal() {
+            document.getElementById('newProfileModal').style.display = 'flex';
+            document.getElementById('profileMenu').classList.add('hidden');
+        }
+        
+        function closeModal() {
+            document.getElementById('newProfileModal').style.display = 'none';
+            document.getElementById('newProfileName').value = '';
+        }
+        
+        async function createProfile() {
+            const profileName = document.getElementById('newProfileName').value.trim();
+            if (!profileName) {
+                showNotification('error', 'Пожалуйста, введите название профиля');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/profiles/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_name: profileName })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    profiles.push(profileName);
+                    currentProfile = profileName;
+                    updateProfilesList();
+                    closeModal();
+                    showNotification('success', `Профиль "${profileName}" создан`);
+                } else {
+                    showNotification('error', result.message);
+                }
+            } catch (error) {
+                showNotification('error', 'Ошибка создания профиля: ' + error.message);
+            }
+        }
+        
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = event.target;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        // Show notification
+        function showNotification(type, message) {
+            const container = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-green-500/20 border-green-500/50 text-green-300',
+                error: 'bg-red-500/20 border-red-500/50 text-red-300',
+                warning: 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300'
+            };
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-times-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+            
+            notification.className = `p-4 rounded-xl glass border ${colors[type]} flex items-center gap-3 animate-[fadeIn_0.3s]`;
+            notification.innerHTML = `
+                <i class="fas ${icons[type]}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+        
+        // Show validation results
+        function showValidation(validation) {
+            if (validation.errors && validation.errors.length > 0) {
+                validation.errors.forEach(error => {
+                    showNotification('error', 'Ошибка: ' + error);
+                });
+            }
+            
+            if (validation.warnings && validation.warnings.length > 0) {
+                validation.warnings.forEach(warning => {
+                    showNotification('warning', 'Предупреждение: ' + warning);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
