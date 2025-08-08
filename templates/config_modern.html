@@ -13,6 +13,9 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <!-- Custom Tooltip Styles -->
+    <link rel="stylesheet" href="/static/css/tooltips.css">
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -136,12 +139,33 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s;
+            color: #ffffff;
         }
         
         .input-modern:focus {
             background: rgba(255, 255, 255, 0.08);
             border-color: #8b5cf6;
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        /* Select dropdown styles */
+        .input-modern option {
+            background: #1a1a2e;
+            color: #ffffff;
+            padding: 8px;
+        }
+        
+        .input-modern option:hover {
+            background: #2d2d44;
+        }
+        
+        /* For better contrast on dropdowns */
+        select.input-modern {
+            color: #e0e0e0;
+        }
+        
+        select.input-modern:focus {
+            color: #ffffff;
         }
         
         /* Priority colors */
@@ -162,7 +186,7 @@
     <div class="relative z-10">
         <!-- Header -->
         <header class="glass-dark border-b border-white/10">
-            <div class="container mx-auto px-6 py-4">
+            <div class="max-w-7xl mx-auto px-8 py-4">
                 <div class="flex items-center justify-between">
                     <!-- Logo and title -->
                     <div class="flex items-center gap-4">
@@ -232,7 +256,6 @@
                             <i class="fas fa-clock text-purple-400"></i>
                         </div>
                         <span>Расписание</span>
-                        <span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-300">Новое</span>
                     </button>
                     
                     <button class="nav-item w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-all hover:bg-white/10" data-section="content">
@@ -261,7 +284,7 @@
                 <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
                     <button onclick="saveConfiguration()" class="w-full px-4 py-3 rounded-xl gradient-primary text-white font-medium hover:opacity-90 transition-all flex items-center justify-center gap-2">
                         <i class="fas fa-save"></i>
-                        <span>Сохранить изменения</span>
+                        <span>Сохранить</span>
                     </button>
                 </div>
             </aside>
@@ -275,11 +298,9 @@
                 <section id="api-section" class="space-y-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-3xl font-bold">Настройки API</h2>
-                        <div class="flex gap-2">
-                            <button class="px-3 py-1.5 rounded-lg glass text-sm hover:bg-white/10 transition-all">
-                                <i class="fas fa-info-circle mr-2"></i>Документация
-                            </button>
-                        </div>
+                        <button onclick="resetApiSettings()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
+                            <i class="fas fa-undo mr-2"></i>Сбросить на стандартные
+                        </button>
                     </div>
                     
                     <!-- Perplexity Card -->
@@ -325,9 +346,7 @@
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
                                     Температура (креативность)
                                     <span id="temp-value" class="ml-2 text-purple-400 font-mono">0.7</span>
-                                    <span class="ml-2 text-gray-500 cursor-help" title="Контролирует случайность и креативность ответов. 0 = предсказуемо, 2 = очень креативно">
-                                        <i class="fas fa-question-circle text-xs"></i>
-                                    </span>
+                                    <!-- Tooltip will be added by JS -->
                                 </label>
                                 <div class="relative">
                                     <input type="range" id="perplexity-temperature" min="0" max="2" step="0.1" value="0.7"
@@ -346,9 +365,7 @@
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
                                     Top P (выборка токенов)
                                     <span id="top-p-value" class="ml-2 text-purple-400 font-mono">0.9</span>
-                                    <span class="ml-2 text-gray-500 cursor-help" title="Альтернативный способ контроля случайности. Используйте либо Temperature, либо Top P">
-                                        <i class="fas fa-question-circle text-xs"></i>
-                                    </span>
+                                    <!-- Tooltip will be added by JS -->
                                 </label>
                                 <div class="relative">
                                     <input type="range" id="perplexity-top-p" min="0" max="1" step="0.05" value="0.9"
@@ -368,9 +385,7 @@
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
                                         Presence Penalty
                                         <span id="presence-value" class="ml-2 text-purple-400 font-mono">0.1</span>
-                                        <span class="ml-2 text-gray-500 cursor-help" title="Штраф за повторение тем. Положительные значения снижают вероятность повторения">
-                                            <i class="fas fa-question-circle text-xs"></i>
-                                        </span>
+                                        <!-- Tooltip will be added by JS -->
                                     </label>
                                     <input type="range" id="perplexity-presence-penalty" min="-2" max="2" step="0.1" value="0.1"
                                            class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
@@ -381,9 +396,7 @@
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
                                         Frequency Penalty
                                         <span id="frequency-value" class="ml-2 text-purple-400 font-mono">0.1</span>
-                                        <span class="ml-2 text-gray-500 cursor-help" title="Штраф за частоту использования токенов. Снижает повторения слов">
-                                            <i class="fas fa-question-circle text-xs"></i>
-                                        </span>
+                                        <!-- Tooltip will be added by JS -->
                                     </label>
                                     <input type="range" id="perplexity-frequency-penalty" min="-2" max="2" step="0.1" value="0.1"
                                            class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
@@ -396,9 +409,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
                                         Глубина поиска
-                                        <span class="ml-2 text-gray-500 cursor-help" title="Количество источников для анализа. High = 100+ источников для глубокого исследования">
-                                            <i class="fas fa-question-circle text-xs"></i>
-                                        </span>
+                                        <!-- Tooltip will be added by JS -->
                                     </label>
                                     <select id="search-depth" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                         <option value="low">Низкая (10-20 источников)</option>
@@ -410,9 +421,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
                                         Фильтр свежести
-                                        <span class="ml-2 text-gray-500 cursor-help" title="Ограничить поиск новостями за определённый период времени">
-                                            <i class="fas fa-question-circle text-xs"></i>
-                                        </span>
+                                        <!-- Tooltip will be added by JS -->
                                     </label>
                                     <select id="search-recency" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                         <option value="">Без ограничений</option>
@@ -431,17 +440,13 @@
                                         <input type="checkbox" id="perplexity-citations" checked class="w-5 h-5 rounded text-purple-500">
                                         <span class="text-sm">Возвращать источники цитирования</span>
                                     </label>
-                                    <span class="text-gray-500 cursor-help" title="Включить ссылки на источники информации в ответе">
-                                        <i class="fas fa-question-circle text-xs"></i>
-                                    </span>
+                                    <!-- Tooltip will be added by JS -->
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
                                         Фильтр доменов
-                                        <span class="ml-2 text-gray-500 cursor-help" title="Список доменов для включения или исключения из поиска. По одному на строку">
-                                            <i class="fas fa-question-circle text-xs"></i>
-                                        </span>
+                                        <!-- Tooltip will be added by JS -->
                                     </label>
                                     <textarea id="perplexity-domains" rows="3" placeholder="pravo.gov.ru&#10;consultant.ru&#10;garant.ru"
                                               class="w-full px-4 py-3 rounded-xl input-modern text-white font-mono text-sm focus:outline-none"></textarea>
@@ -494,9 +499,7 @@
                             <div id="style-selector" class="col-span-3" style="display: none;">
                                 <label class="block text-sm font-medium text-gray-300 mb-2">
                                     Стиль изображения (DALL-E 3)
-                                    <span class="ml-2 text-gray-500 cursor-help" title="Vivid = яркие, насыщенные цвета. Natural = более реалистичные, естественные цвета">
-                                        <i class="fas fa-question-circle text-xs"></i>
-                                    </span>
+                                    <!-- Tooltip will be added by JS -->
                                 </label>
                                 <select id="openai-style" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                     <option value="vivid">Vivid (яркий)</option>
@@ -512,6 +515,9 @@
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-3xl font-bold">Расписание публикаций</h2>
                         <div class="flex gap-2">
+                            <button onclick="resetScheduleSettings()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
+                                <i class="fas fa-undo mr-2"></i>Сбросить на стандартные
+                            </button>
                             <button onclick="autoDistributeSchedule()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
                                 <i class="fas fa-magic mr-2"></i>Авто-распределить
                             </button>
@@ -602,6 +608,9 @@
                 <section id="content-section" class="space-y-6 hidden">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-3xl font-bold">Настройки контента</h2>
+                        <button onclick="resetContentSettings()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
+                            <i class="fas fa-undo mr-2"></i>Сбросить на стандартные
+                        </button>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-6">
@@ -657,9 +666,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">
                                         Часовой пояс системы
-                                        <span class="ml-2 text-gray-500 cursor-help" title="Все расписания работают в этом часовом поясе">
-                                            <i class="fas fa-question-circle text-xs"></i>
-                                        </span>
+                                        <!-- Tooltip will be added by JS -->
                                     </label>
                                     <select id="user-timezone" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
                                         <option value="Europe/Moscow" selected>Москва (MSK)</option>
@@ -708,8 +715,8 @@
                 <section id="prompts-section" class="space-y-6 hidden">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-3xl font-bold">AI Промпты</h2>
-                        <button class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
-                            <i class="fas fa-undo mr-2"></i>Сбросить на дефолтные
+                        <button onclick="resetPrompts()" class="px-4 py-2 rounded-lg glass hover:bg-white/10 transition-all">
+                            <i class="fas fa-undo mr-2"></i>Сбросить на стандартные
                         </button>
                     </div>
                     
@@ -1461,6 +1468,102 @@
                 });
             }
         }
+        
+        // Reset functions for each section
+        function resetApiSettings() {
+            // Perplexity defaults
+            document.getElementById('perplexity-model').value = 'sonar-deep-research';
+            document.getElementById('perplexity-max-tokens').value = 8192;
+            document.getElementById('perplexity-temperature').value = 0.7;
+            document.getElementById('temp-value').textContent = '0.7';
+            document.getElementById('perplexity-top-p').value = 0.9;
+            document.getElementById('top-p-value').textContent = '0.9';
+            document.getElementById('perplexity-presence-penalty').value = 0.1;
+            document.getElementById('presence-value').textContent = '0.1';
+            document.getElementById('perplexity-frequency-penalty').value = 0.1;
+            document.getElementById('frequency-value').textContent = '0.1';
+            document.getElementById('search-depth').value = 'high';
+            document.getElementById('search-recency').value = 'day';
+            document.getElementById('perplexity-citations').checked = true;
+            document.getElementById('perplexity-domains').value = 'pravo.gov.ru\nconsultant.ru\ngarant.ru';
+            
+            // OpenAI defaults
+            document.getElementById('openai-model').value = 'dall-e-3';
+            document.getElementById('openai-quality').value = 'hd';
+            if (document.getElementById('openai-style')) {
+                document.getElementById('openai-style').value = 'vivid';
+            }
+            
+            updatePerplexityFields();
+            updateOpenAIOptions();
+            document.getElementById('openai-size').value = '1792x1024';
+            
+            showNotification('success', 'Настройки API сброшены на стандартные');
+        }
+        
+        function resetScheduleSettings() {
+            document.getElementById('collection-time').value = '08:30';
+            document.getElementById('publications-count').value = 7;
+            updatePublicationsCount();
+            
+            // Set default publication times
+            const defaultTimes = ['09:05', '11:03', '13:07', '15:09', '17:05', '19:02', '21:07'];
+            for (let i = 1; i <= 7; i++) {
+                const input = document.getElementById(`pub-time-${i}`);
+                if (input) {
+                    input.value = defaultTimes[i-1] || '';
+                }
+            }
+            
+            updateTimelineMarkers();
+            showNotification('success', 'Расписание сброшено на стандартное');
+        }
+        
+        function resetContentSettings() {
+            document.getElementById('news-per-day').value = 7;
+            document.getElementById('min-content').value = 100;
+            document.getElementById('max-content').value = 4000;
+            document.getElementById('generate-images').checked = true;
+            document.getElementById('publish-without-images').checked = false;
+            document.getElementById('user-timezone').value = 'Europe/Moscow';
+            document.getElementById('debug-mode').checked = false;
+            document.getElementById('dry-run').checked = false;
+            document.getElementById('auto-retry').checked = true;
+            
+            showNotification('success', 'Настройки контента сброшены на стандартные');
+        }
+        
+        async function resetPrompts() {
+            try {
+                const response = await fetch('/api/prompts/default');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('perplexity-system-prompt').value = data.prompts.perplexity_system || '';
+                    document.getElementById('perplexity-collection-prompt').value = data.prompts.perplexity_collection || '';
+                    document.getElementById('openai-comic-prompt').value = data.prompts.openai_comic || '';
+                    
+                    showNotification('success', 'Промпты сброшены на стандартные');
+                } else {
+                    // Fallback to hardcoded defaults
+                    document.getElementById('perplexity-system-prompt').value = 'Ты - эксперт по российскому законодательству.';
+                    document.getElementById('perplexity-collection-prompt').value = 'Собери 7 самых важных юридических новостей за последний день.';
+                    document.getElementById('openai-comic-prompt').value = 'Создай 4-панельный комикс без текста.';
+                    
+                    showNotification('success', 'Промпты сброшены на стандартные');
+                }
+            } catch (error) {
+                // Fallback to hardcoded defaults
+                document.getElementById('perplexity-system-prompt').value = 'Ты - эксперт по российскому законодательству.';
+                document.getElementById('perplexity-collection-prompt').value = 'Собери 7 самых важных юридических новостей за последний день.';
+                document.getElementById('openai-comic-prompt').value = 'Создай 4-панельный комикс без текста.';
+                
+                showNotification('success', 'Промпты сброшены на стандартные');
+            }
+        }
     </script>
+    
+    <!-- Custom Tooltip System -->
+    <script src="/static/js/tooltips.js"></script>
 </body>
 </html>

@@ -1,0 +1,232 @@
+/* NEWSMAKER Custom Tooltip System */
+/* Glassmorphism tooltips with smooth animations */
+
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-trigger {
+    cursor: help;
+    color: #9ca3af;
+    margin-left: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.tooltip-trigger:hover {
+    color: #a78bfa;
+}
+
+.tooltip {
+    position: absolute;
+    z-index: 9999;
+    padding: 16px 20px;
+    max-width: 380px;
+    min-width: 320px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-8px);
+    
+    /* Glassmorphism effect */
+    background: rgba(15, 15, 25, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 12px;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 0 30px rgba(139, 92, 246, 0.1);
+}
+
+.tooltip::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: inherit;
+    border: inherit;
+    border-right: none;
+    border-top: none;
+    transform: rotate(45deg);
+}
+
+/* Tooltip positions */
+.tooltip.tooltip-top {
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+}
+
+.tooltip.tooltip-top::before {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.tooltip.tooltip-bottom {
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+}
+
+.tooltip.tooltip-bottom::before {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%) rotate(225deg);
+}
+
+.tooltip.tooltip-left {
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-8px);
+}
+
+.tooltip.tooltip-left::before {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(135deg);
+}
+
+.tooltip.tooltip-right {
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%) translateX(8px);
+}
+
+.tooltip.tooltip-right::before {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(315deg);
+}
+
+/* Show state */
+.tooltip.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tooltip.tooltip-top.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip.tooltip-bottom.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.tooltip.tooltip-left.show {
+    transform: translateY(-50%) translateX(0);
+}
+
+.tooltip.tooltip-right.show {
+    transform: translateY(-50%) translateX(0);
+}
+
+/* Tooltip content styling */
+.tooltip-content {
+    color: #e0e0e0;
+    font-size: 13px;
+    line-height: 1.6;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.tooltip-title {
+    color: #a78bfa;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.tooltip-text {
+    margin-bottom: 8px;
+}
+
+.tooltip-example {
+    padding: 6px 10px;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: 6px;
+    border-left: 2px solid #a78bfa;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #c4b5fd;
+}
+
+/* Tooltip types */
+.tooltip.tooltip-info {
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(59, 130, 246, 0.1);
+}
+
+.tooltip.tooltip-success {
+    border-color: rgba(34, 197, 94, 0.3);
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(34, 197, 94, 0.1);
+}
+
+.tooltip.tooltip-warning {
+    border-color: rgba(251, 146, 60, 0.3);
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(251, 146, 60, 0.1);
+}
+
+.tooltip.tooltip-error {
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(239, 68, 68, 0.1);
+}
+
+/* Animation for pulse effect on hover */
+@keyframes tooltipPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    }
+}
+
+.tooltip-trigger:hover {
+    animation: tooltipPulse 1.5s infinite;
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+    .tooltip {
+        max-width: 200px;
+        font-size: 12px;
+    }
+    
+    /* Disable tooltips on touch devices */
+    @media (hover: none) {
+        .tooltip {
+            display: none;
+        }
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .tooltip {
+        border-width: 2px;
+        background: rgba(0, 0, 0, 0.98);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .tooltip,
+    .tooltip-trigger {
+        transition: none;
+        animation: none;
+    }
+}
