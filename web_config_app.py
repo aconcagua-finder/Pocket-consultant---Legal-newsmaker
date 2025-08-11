@@ -96,13 +96,13 @@ DEFAULT_CONFIG = {
             }
         },
         "openai": {
-            "model": "dall-e-3",  # По умолчанию DALL-E 3
+            "model": "gpt-image-1",  # По умолчанию GPT-Image-1
             "available_models": [
                 "dall-e-2",
                 "dall-e-3",
                 "gpt-image-1"  # Новая модель с поддержкой до 4096x4096
             ],
-            "image_quality": "standard",
+            "image_quality": "high",  # Дефолт для GPT-Image-1
             "quality_options": {
                 "dall-e-2": ["standard"],
                 "dall-e-3": ["standard", "hd"],
@@ -145,9 +145,9 @@ DEFAULT_CONFIG = {
                     "hd": {"1024x1024": 0.080, "1024x1792": 0.120, "1792x1024": 0.120}
                 },
                 "gpt-image-1": {
-                    "low": 0.02,     # Низкое качество - $0.02
-                    "medium": 0.07,  # Среднее качество - $0.07
-                    "high": 0.19     # Высокое качество - $0.19
+                    "low": 0.01,     # Низкое качество - $0.01
+                    "medium": 0.04,  # Среднее качество - $0.04
+                    "high": 0.17     # Высокое качество - $0.17
                 }
             },
             "descriptions": {  # Описания параметров для UI
@@ -172,13 +172,30 @@ DEFAULT_CONFIG = {
             "15:09",
             "17:05",
             "19:02",
-            "21:07"
+            "21:07",
+            "",  # Слоты 8-24 для расширения
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
         ],
         "auto_distribute": False,  # Автоматическое распределение времён
         "timezone": "Europe/Moscow"  # Legacy для совместимости
     },
     "content": {
-        "max_news_per_day": 7,
+        "max_news_per_day": 24,  # Увеличено до 24
         "min_content_length": 50,
         "max_content_length": 1500,
         "similarity_threshold": 0.7,
@@ -659,7 +676,7 @@ class ConfigManager:
             # API настройки OpenAI
             if "api_models" in self.config and "openai" in self.config["api_models"]:
                 openai = self.config["api_models"]["openai"]
-                config_updates.append(f'OPENAI_IMAGE_MODEL = "{openai.get("model", "dall-e-3")}"')
+                config_updates.append(f'OPENAI_IMAGE_MODEL = "{openai.get("model", "gpt-image-1")}"')
                 config_updates.append(f'OPENAI_IMAGE_QUALITY = "{openai.get("image_quality", "standard")}"')
                 if openai.get("image_style"):  # Не все модели имеют стиль
                     config_updates.append(f'OPENAI_IMAGE_STYLE = "{openai["image_style"]}"')
@@ -735,11 +752,11 @@ class ConfigManager:
         
         # Проверяем расписание
         schedule = self.config["schedule"]["publication_times"]
-        if len(schedule) != self.config["content"]["max_news_per_day"]:
-            warnings.append(f"Количество времён публикации ({len(schedule)}) не совпадает с max_news_per_day ({self.config['content']['max_news_per_day']})")
+        # Фильтруем только непустые времена для проверки
+        active_times = [t for t in schedule if t and t.strip()]
         
         # Проверяем время
-        for time_str in schedule:
+        for time_str in active_times:
             try:
                 datetime.strptime(time_str, "%H:%M")
             except ValueError:
@@ -808,9 +825,34 @@ def update_config():
     try:
         data = request.json
         
-        # Обновляем конфигурацию
+        # Обновляем конфигурацию, сохраняя служебные поля
         if 'config' in data:
+            # Сохраняем служебные поля которые не должны меняться из UI
+            preserved_fields = {}
+            if 'api_models' in config_manager.config:
+                if 'perplexity' in config_manager.config['api_models']:
+                    preserved_fields['perplexity_available_models'] = config_manager.config['api_models']['perplexity'].get('available_models', [])
+                    preserved_fields['perplexity_max_tokens_limits'] = config_manager.config['api_models']['perplexity'].get('max_tokens_limits', {})
+                    preserved_fields['perplexity_descriptions'] = config_manager.config['api_models']['perplexity'].get('descriptions', {})
+                if 'openai' in config_manager.config['api_models']:
+                    preserved_fields['openai_available_models'] = config_manager.config['api_models']['openai'].get('available_models', [])
+                    preserved_fields['openai_model_configs'] = config_manager.config['api_models']['openai'].get('model_configs', {})
+                    preserved_fields['openai_descriptions'] = config_manager.config['api_models']['openai'].get('descriptions', {})
+            
+            # Обновляем конфигурацию
             config_manager.config = data['config']
+            
+            # Восстанавливаем служебные поля
+            if preserved_fields:
+                if 'api_models' in config_manager.config:
+                    if 'perplexity' in config_manager.config['api_models']:
+                        config_manager.config['api_models']['perplexity']['available_models'] = preserved_fields.get('perplexity_available_models', [])
+                        config_manager.config['api_models']['perplexity']['max_tokens_limits'] = preserved_fields.get('perplexity_max_tokens_limits', {})
+                        config_manager.config['api_models']['perplexity']['descriptions'] = preserved_fields.get('perplexity_descriptions', {})
+                    if 'openai' in config_manager.config['api_models']:
+                        config_manager.config['api_models']['openai']['available_models'] = preserved_fields.get('openai_available_models', [])
+                        config_manager.config['api_models']['openai']['model_configs'] = preserved_fields.get('openai_model_configs', {})
+                        config_manager.config['api_models']['openai']['descriptions'] = preserved_fields.get('openai_descriptions', {})
         
         if 'prompts' in data:
             config_manager.prompts = data['prompts']
@@ -1137,7 +1179,7 @@ def auto_distribute_schedule():
     """API endpoint для автоматического распределения времён публикации"""
     try:
         data = request.json
-        publications_count = data.get('publications_count', 7)
+        publications_count = min(24, max(1, data.get('publications_count', 7)))  # Ограничиваем от 1 до 24
         start_time = data.get('start_time', '09:00')
         end_time = data.get('end_time', '21:00')
         

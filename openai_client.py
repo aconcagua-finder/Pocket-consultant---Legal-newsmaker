@@ -36,7 +36,7 @@ class OpenAIClient:
         # Используем настройки из веб-конфига если они переданы
         if web_config and 'api_models' in web_config:
             openai_config = web_config['api_models'].get('openai', {})
-            self.model = openai_config.get('model', 'dall-e-3')
+            self.model = openai_config.get('model', 'gpt-image-1')
             
             # Корректируем параметры в зависимости от модели
             self.image_quality = openai_config.get('image_quality', 'standard')
@@ -68,7 +68,7 @@ class OpenAIClient:
                     logger.info(f"GPT-Image-1 с качеством '{self.image_quality}': ${price} за изображение")
         else:
             # Дефолтные значения
-            self.model = 'dall-e-3'
+            self.model = 'gpt-image-1'
             self.image_quality = 'standard'
             self.image_style = 'vivid'
             self.image_size = '1024x1024'

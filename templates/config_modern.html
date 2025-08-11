@@ -92,28 +92,6 @@
             animation: gradient 15s ease infinite;
         }
         
-        /* Timeline styles */
-        .timeline-track {
-            background: linear-gradient(90deg, 
-                rgba(59, 130, 246, 0.1) 0%, 
-                rgba(139, 92, 246, 0.1) 50%, 
-                rgba(236, 72, 153, 0.1) 100%);
-        }
-        
-        .timeline-marker {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: grab;
-        }
-        
-        .timeline-marker:active {
-            cursor: grabbing;
-            transform: scale(1.1);
-        }
-        
-        .timeline-marker.dragging {
-            opacity: 0.5;
-            transform: scale(1.2);
-        }
         
         /* Glow effects */
         .glow-primary {
@@ -140,6 +118,82 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s;
             color: #ffffff;
+        }
+        
+        /* Custom time picker styles */
+        .custom-time-picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            padding: 8px 12px;
+        }
+        
+        .time-select {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            padding: 4px;
+            min-width: 50px;
+        }
+        
+        .time-select option {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 4px;
+        }
+        
+        .time-separator {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            user-select: none;
+        }
+        
+        .custom-time-picker:focus-within {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(96, 165, 250, 0.8);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+        
+        /* Mini time picker for publication times */
+        .mini-time-picker {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 4px 8px;
+        }
+        
+        .mini-time-select {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+            padding: 2px;
+            min-width: 35px;
+        }
+        
+        .mini-time-select option {
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .mini-time-separator {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            user-select: none;
         }
         
         .input-modern:focus {
@@ -169,13 +223,31 @@
         }
         
         /* Priority colors */
+        /* Priority colors for 24 timings */
         .priority-1 { background: #ef4444; }
         .priority-2 { background: #f97316; }
         .priority-3 { background: #eab308; }
-        .priority-4 { background: #22c55e; }
-        .priority-5 { background: #3b82f6; }
-        .priority-6 { background: #8b5cf6; }
-        .priority-7 { background: #6b7280; }
+        .priority-4 { background: #84cc16; }
+        .priority-5 { background: #22c55e; }
+        .priority-6 { background: #10b981; }
+        .priority-7 { background: #14b8a6; }
+        .priority-8 { background: #06b6d4; }
+        .priority-9 { background: #0ea5e9; }
+        .priority-10 { background: #3b82f6; }
+        .priority-11 { background: #6366f1; }
+        .priority-12 { background: #8b5cf6; }
+        .priority-13 { background: #a855f7; }
+        .priority-14 { background: #c084fc; }
+        .priority-15 { background: #e879f9; }
+        .priority-16 { background: #f472b6; }
+        .priority-17 { background: #fb7185; }
+        .priority-18 { background: #f87171; }
+        .priority-19 { background: #fb923c; }
+        .priority-20 { background: #fbbf24; }
+        .priority-21 { background: #facc15; }
+        .priority-22 { background: #a3e635; }
+        .priority-23 { background: #86efac; }
+        .priority-24 { background: #6ee7b7; }
     </style>
 </head>
 <body class="min-h-screen bg-gray-900 text-white overflow-x-hidden">
@@ -473,8 +545,8 @@
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Модель</label>
                                 <select id="openai-model" class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none" onchange="updateOpenAIOptions()">
                                     <option value="dall-e-2">DALL-E 2</option>
-                                    <option value="dall-e-3" selected>DALL-E 3</option>
-                                    <option value="gpt-image-1">GPT-Image-1 (4K)</option>
+                                    <option value="dall-e-3">DALL-E 3</option>
+                                    <option value="gpt-image-1" selected>GPT-Image-1 (4K)</option>
                                 </select>
                             </div>
                             
@@ -538,35 +610,6 @@
                         </div>
                     </div>
                     
-                    <!-- Visual Timeline -->
-                    <div class="rounded-2xl glass p-6">
-                        <h3 class="text-lg font-semibold mb-4">Ежедневная шкала времени</h3>
-                        
-                        <!-- Timeline visualization -->
-                        <div class="relative h-32 rounded-xl timeline-track p-4">
-                            <!-- Hour markers -->
-                            <div class="absolute inset-x-4 top-2 flex justify-between text-xs text-gray-400">
-                                <span>00:00</span>
-                                <span>06:00</span>
-                                <span>12:00</span>
-                                <span>18:00</span>
-                                <span>24:00</span>
-                            </div>
-                            
-                            <!-- Collection time marker -->
-                            <div id="collection-marker" class="absolute top-12 w-1 h-16 bg-blue-500 rounded-full" style="left: 35%;">
-                                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded bg-blue-500 text-xs whitespace-nowrap">
-                                    Сбор новостей
-                                </div>
-                            </div>
-                            
-                            <!-- Publication markers container -->
-                            <div id="timeline-markers" class="absolute inset-x-4 top-12">
-                                <!-- Markers will be added dynamically -->
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Schedule Configuration -->
                     <div class="grid grid-cols-2 gap-6">
                         <!-- Collection Time -->
@@ -575,8 +618,16 @@
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-300 mb-2">Ежедневное время сбора</label>
-                                    <input type="time" id="collection-time" value="08:30" 
-                                           class="w-full px-4 py-2.5 rounded-xl input-modern text-white focus:outline-none">
+                                    <div class="custom-time-picker">
+                                        <select id="collection-time-hour" class="time-select">
+                                            <!-- Hours will be generated by JS -->
+                                        </select>
+                                        <span class="time-separator">:</span>
+                                        <select id="collection-time-minute" class="time-select">
+                                            <!-- Minutes will be generated by JS -->
+                                        </select>
+                                        <input type="hidden" id="collection-time" value="08:30">
+                                    </div>
                                 </div>
                                 <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                                     <p class="text-sm text-blue-300">
@@ -872,24 +923,124 @@
         let currentProfile = 'Pocket Consultant';
         let draggedMarker = null;
         
+        // Ensure time inputs always show 24-hour format
+        function enforceTime24Format() {
+            // For all time inputs
+            document.querySelectorAll('input[type="time"]').forEach(input => {
+                // Add event listeners to validate format
+                if (!input.hasAttribute('data-time24-enforced')) {
+                    input.setAttribute('data-time24-enforced', 'true');
+                    
+                    input.addEventListener('change', function() {
+                        // Ensure value is in HH:MM format
+                        if (this.value) {
+                            // Remove any AM/PM if present
+                            let cleanValue = this.value.replace(/\s?(AM|PM|am|pm)\s?/gi, '').trim();
+                            
+                            // Parse time and ensure 24-hour format
+                            const parts = cleanValue.split(':');
+                            if (parts.length >= 2) {
+                                let hours = parseInt(parts[0]) || 0;
+                                const minutes = parseInt(parts[1]) || 0;
+                                
+                                // Ensure hours are in 24-hour format
+                                hours = Math.max(0, Math.min(23, hours));
+                                const formattedHours = String(hours).padStart(2, '0');
+                                const formattedMinutes = String(minutes).padStart(2, '0');
+                                this.value = `${formattedHours}:${formattedMinutes}`;
+                            }
+                        }
+                    });
+                    
+                    // Set attributes to hint 24-hour format
+                    input.setAttribute('step', '60');
+                    input.setAttribute('pattern', '[0-9]{2}:[0-9]{2}');
+                }
+            });
+        }
+        
+        // Initialize custom time pickers
+        function initializeTimePickers() {
+            // Initialize collection time picker
+            const collectionHour = document.getElementById('collection-time-hour');
+            const collectionMinute = document.getElementById('collection-time-minute');
+            const collectionInput = document.getElementById('collection-time');
+            
+            if (collectionHour && collectionMinute) {
+                // Populate hours
+                collectionHour.innerHTML = '';
+                for (let h = 0; h < 24; h++) {
+                    const option = document.createElement('option');
+                    option.value = String(h).padStart(2, '0');
+                    option.textContent = String(h).padStart(2, '0');
+                    collectionHour.appendChild(option);
+                }
+                
+                // Populate minutes
+                collectionMinute.innerHTML = '';
+                for (let m = 0; m < 60; m += 5) {
+                    const option = document.createElement('option');
+                    option.value = String(m).padStart(2, '0');
+                    option.textContent = String(m).padStart(2, '0');
+                    collectionMinute.appendChild(option);
+                }
+                
+                // Set initial value
+                const initialTime = collectionInput.value || '08:30';
+                const [hour, minute] = initialTime.split(':');
+                collectionHour.value = hour;
+                // Round minutes to nearest 5
+                const mins = parseInt(minute);
+                const roundedMins = Math.round(mins / 5) * 5;
+                collectionMinute.value = String(roundedMins).padStart(2, '0');
+                
+                // Update hidden input when selects change
+                const updateCollectionTime = () => {
+                    collectionInput.value = `${collectionHour.value}:${collectionMinute.value}`;
+                };
+                collectionHour.addEventListener('change', updateCollectionTime);
+                collectionMinute.addEventListener('change', updateCollectionTime);
+            }
+        }
+        
         // Initialize on load
         document.addEventListener('DOMContentLoaded', () => {
             loadConfiguration();
             setupEventListeners();
-            updateTimelineMarkers();
+            initializeTimePickers();
+            // Timeline will be initialized after forms are populated
             updateCurrentTime();
             setInterval(updateCurrentTime, 1000);
         });
         
+        // Helper function to format time in 24-hour format
+        function formatTime24(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+        
         // Update current time display
         function updateCurrentTime() {
             const now = new Date();
-            const timeString = now.toLocaleTimeString('ru-RU', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                timeZone: document.getElementById('user-timezone')?.value || 'Europe/Moscow'
-            });
+            // Force 24-hour format using manual formatting as fallback
+            let timeString;
+            try {
+                timeString = now.toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit',
+                    hour12: false,
+                    timeZone: document.getElementById('user-timezone')?.value || 'Europe/Moscow'
+                });
+                // Double-check for AM/PM and remove if present
+                timeString = timeString.replace(/\s?(AM|PM|am|pm)\s?/gi, '').trim();
+            } catch (e) {
+                // Fallback to manual formatting
+                timeString = formatTime24(now);
+            }
+            
             const dateString = now.toLocaleDateString('ru-RU', {
                 timeZone: document.getElementById('user-timezone')?.value || 'Europe/Moscow'
             });
@@ -940,9 +1091,6 @@
             document.getElementById(`${section}-section`).classList.remove('hidden');
             
             // Update timeline if switching to schedule
-            if (section === 'schedule') {
-                updateTimelineMarkers();
-            }
         }
         
         // Load configuration
@@ -1013,15 +1161,37 @@
             document.getElementById('perplexity-domains').value = currentConfig.api_models?.perplexity?.domains?.join('\n') || '';
             
             // OpenAI settings
-            document.getElementById('openai-model').value = currentConfig.api_models?.openai?.model || 'dall-e-3';
+            const openaiModel = currentConfig.api_models?.openai?.model || 'gpt-image-1';
+            document.getElementById('openai-model').value = openaiModel;
+            
+            // Устанавливаем правильный дефолт качества в зависимости от модели
+            let defaultQuality = 'standard';
+            if (openaiModel === 'gpt-image-1') {
+                defaultQuality = 'high';
+            } else if (openaiModel === 'dall-e-3') {
+                defaultQuality = 'standard';
+            }
+            
             document.getElementById('openai-size').value = currentConfig.api_models?.openai?.image_size || '1024x1024';
-            document.getElementById('openai-quality').value = currentConfig.api_models?.openai?.image_quality || 'standard';
+            document.getElementById('openai-quality').value = currentConfig.api_models?.openai?.image_quality || defaultQuality;
             if (document.getElementById('openai-style')) {
                 document.getElementById('openai-style').value = currentConfig.api_models?.openai?.style || 'vivid';
             }
             
             // Schedule
-            document.getElementById('collection-time').value = currentConfig.schedule?.collection_time || '08:30';
+            const collectionTime = currentConfig.schedule?.collection_time || '08:30';
+            document.getElementById('collection-time').value = collectionTime;
+            // Update custom time picker if it exists
+            const [collectionHour, collectionMin] = collectionTime.split(':');
+            const hourSelect = document.getElementById('collection-time-hour');
+            const minSelect = document.getElementById('collection-time-minute');
+            if (hourSelect && minSelect) {
+                hourSelect.value = collectionHour;
+                // Round minutes to nearest 5
+                const mins = parseInt(collectionMin);
+                const roundedMins = Math.round(mins / 5) * 5;
+                minSelect.value = String(roundedMins).padStart(2, '0');
+            }
             document.getElementById('publications-count').value = currentConfig.schedule?.publications_per_day || 7;
             updatePublicationsCount();
             
@@ -1045,6 +1215,8 @@
             
             updatePerplexityFields();
             updateOpenAIOptions();
+            
+            // Initialize timeline after forms are populated
         }
         
         // Update Perplexity fields based on model
@@ -1074,6 +1246,10 @@
             const qualitySelect = document.getElementById('openai-quality');
             const styleSelector = document.getElementById('style-selector');
             
+            // Сохраняем текущие значения
+            const currentQuality = qualitySelect.value;
+            const currentSize = sizeSelect.value;
+            
             sizeSelect.innerHTML = '';
             qualitySelect.innerHTML = '';
             
@@ -1081,6 +1257,9 @@
             if (styleSelector) {
                 styleSelector.style.display = (model === 'dall-e-3') ? 'block' : 'none';
             }
+            
+            let defaultQuality = '';
+            let defaultSize = '1024x1024';
             
             if (model === 'dall-e-2') {
                 ['256x256', '512x512', '1024x1024'].forEach(size => {
@@ -1090,6 +1269,7 @@
                     sizeSelect.appendChild(option);
                 });
                 qualitySelect.innerHTML = '<option value="standard">Standard</option>';
+                defaultQuality = 'standard';
             } else if (model === 'dall-e-3') {
                 ['1024x1024', '1024x1792', '1792x1024'].forEach(size => {
                     const option = document.createElement('option');
@@ -1101,6 +1281,7 @@
                     <option value="standard">Standard</option>
                     <option value="hd">HD</option>
                 `;
+                defaultQuality = 'standard';
             } else if (model === 'gpt-image-1') {
                 ['256x256', '512x512', '1024x1024', '2048x2048', '4096x4096'].forEach(size => {
                     const option = document.createElement('option');
@@ -1113,6 +1294,20 @@
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
                 `;
+                defaultQuality = 'high';  // Дефолт high для GPT-Image-1
+            }
+            
+            // Восстанавливаем или устанавливаем дефолтные значения
+            if (qualitySelect.querySelector(`option[value="${currentQuality}"]`)) {
+                qualitySelect.value = currentQuality;
+            } else {
+                qualitySelect.value = defaultQuality;
+            }
+            
+            if (sizeSelect.querySelector(`option[value="${currentSize}"]`)) {
+                sizeSelect.value = currentSize;
+            } else {
+                sizeSelect.value = defaultSize;
             }
             
             updateOpenAIPrice();
@@ -1127,7 +1322,7 @@
             const prices = {
                 'dall-e-2': { 'standard': 0.02 },
                 'dall-e-3': { 'standard': 0.04, 'hd': 0.08 },
-                'gpt-image-1': { 'low': 0.02, 'medium': 0.07, 'high': 0.19 }
+                'gpt-image-1': { 'low': 0.01, 'medium': 0.04, 'high': 0.17 }
             };
             
             let price = 0;
@@ -1166,93 +1361,109 @@
                 div.className = 'flex items-center gap-2';
                 
                 const badge = document.createElement('span');
-                badge.className = `w-8 h-8 rounded-lg priority-${i} flex items-center justify-center text-white font-semibold text-sm`;
+                // Ensure priority classes work for all 24 slots
+                const priorityClass = i <= 24 ? `priority-${i}` : 'bg-gray-500';
+                badge.className = `w-8 h-8 rounded-lg ${priorityClass} flex items-center justify-center text-white font-semibold text-sm`;
                 badge.textContent = i;
                 
-                const input = document.createElement('input');
-                input.type = 'time';
-                input.id = `pub-time-${i}`;
-                input.className = 'flex-1 px-3 py-2 rounded-lg input-modern text-white focus:outline-none';
-                input.value = pubTimes[i-1] || '';
-                input.onchange = updateTimelineMarkers;
+                // Create custom time picker instead of input[type="time"]
+                const timePickerContainer = document.createElement('div');
+                timePickerContainer.className = 'mini-time-picker flex-1';
+                
+                const hourSelect = document.createElement('select');
+                hourSelect.id = `pub-time-${i}-hour`;
+                hourSelect.className = 'mini-time-select';
+                for (let h = 0; h < 24; h++) {
+                    const option = document.createElement('option');
+                    option.value = String(h).padStart(2, '0');
+                    option.textContent = String(h).padStart(2, '0');
+                    hourSelect.appendChild(option);
+                }
+                
+                const separator = document.createElement('span');
+                separator.className = 'mini-time-separator';
+                separator.textContent = ':';
+                
+                const minuteSelect = document.createElement('select');
+                minuteSelect.id = `pub-time-${i}-minute`;
+                minuteSelect.className = 'mini-time-select';
+                for (let m = 0; m < 60; m += 5) {
+                    const option = document.createElement('option');
+                    option.value = String(m).padStart(2, '0');
+                    option.textContent = String(m).padStart(2, '0');
+                    minuteSelect.appendChild(option);
+                }
+                
+                // Hidden input to store the actual time value
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = `pub-time-${i}`;
+                hiddenInput.value = pubTimes[i-1] || '';
+                
+                // Set initial values if time exists
+                if (pubTimes[i-1]) {
+                    const [hour, minute] = pubTimes[i-1].split(':');
+                    hourSelect.value = hour;
+                    // Round minutes to nearest 5
+                    const mins = parseInt(minute);
+                    const roundedMins = Math.round(mins / 5) * 5;
+                    minuteSelect.value = String(roundedMins).padStart(2, '0');
+                }
+                
+                // Update hidden input when selects change
+                const updateTime = () => {
+                    hiddenInput.value = `${hourSelect.value}:${minuteSelect.value}`;
+                };
+                hourSelect.addEventListener('change', updateTime);
+                minuteSelect.addEventListener('change', updateTime);
+                
+                timePickerContainer.appendChild(hourSelect);
+                timePickerContainer.appendChild(separator);
+                timePickerContainer.appendChild(minuteSelect);
+                timePickerContainer.appendChild(hiddenInput);
                 
                 div.appendChild(badge);
-                div.appendChild(input);
+                div.appendChild(timePickerContainer);
                 container.appendChild(div);
             }
-            
-            updateTimelineMarkers();
         }
         
-        // Update timeline markers
-        function updateTimelineMarkers() {
-            const container = document.getElementById('timeline-markers');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            const count = parseInt(document.getElementById('publications-count').value);
-            for (let i = 1; i <= count; i++) {
-                const timeInput = document.getElementById(`pub-time-${i}`);
-                if (timeInput && timeInput.value) {
-                    const [hours, minutes] = timeInput.value.split(':').map(Number);
-                    const position = ((hours * 60 + minutes) / 1440) * 100;
-                    
-                    const marker = document.createElement('div');
-                    marker.className = `timeline-marker absolute w-3 h-3 rounded-full priority-${i} cursor-pointer`;
-                    marker.style.left = `${position}%`;
-                    marker.style.transform = 'translateX(-50%)';
-                    marker.draggable = true;
-                    marker.dataset.index = i;
-                    
-                    // Drag events
-                    marker.addEventListener('dragstart', handleDragStart);
-                    marker.addEventListener('dragend', handleDragEnd);
-                    
-                    container.appendChild(marker);
-                }
-            }
-            
-            // Update collection marker
-            const collectionTime = document.getElementById('collection-time').value;
-            if (collectionTime) {
-                const [hours, minutes] = collectionTime.split(':').map(Number);
-                const position = ((hours * 60 + minutes) / 1440) * 100;
-                document.getElementById('collection-marker').style.left = `${position}%`;
-            }
-        }
-        
-        // Drag and drop handlers
-        function handleDragStart(e) {
-            draggedMarker = e.target;
-            e.target.classList.add('dragging');
-        }
-        
-        function handleDragEnd(e) {
-            e.target.classList.remove('dragging');
-            draggedMarker = null;
-        }
         
         // Auto-distribute schedule
         async function autoDistributeSchedule() {
             const count = parseInt(document.getElementById('publications-count').value);
-            const startHour = 9;
-            const endHour = 21;
-            const interval = (endHour - startHour) * 60 / count;
             
-            for (let i = 1; i <= count; i++) {
-                const minutes = startHour * 60 + interval * (i - 1);
-                const hours = Math.floor(minutes / 60);
-                const mins = Math.floor(minutes % 60);
-                const timeStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+            {
+                // Fallback для случая, когда timeline еще не инициализирован
+                const startHour = 9;
+                const endHour = 21;
+                const interval = (endHour - startHour) * 60 / count;
                 
-                const input = document.getElementById(`pub-time-${i}`);
-                if (input) {
-                    input.value = timeStr;
+                for (let i = 1; i <= count; i++) {
+                    const minutes = startHour * 60 + interval * (i - 1);
+                    const hours = Math.floor(minutes / 60);
+                    const mins = Math.floor(minutes % 60);
+                    const hourStr = String(hours).padStart(2, '0');
+                    const minStr = String(Math.floor(mins / 5) * 5).padStart(2, '0'); // Round to nearest 5 minutes
+                    
+                    // Update hidden input
+                    const input = document.getElementById(`pub-time-${i}`);
+                    if (input) {
+                        input.value = `${hourStr}:${minStr}`;
+                    }
+                    
+                    // Update custom time picker selects
+                    const hourSelect = document.getElementById(`pub-time-${i}-hour`);
+                    const minSelect = document.getElementById(`pub-time-${i}-minute`);
+                    if (hourSelect && minSelect) {
+                        hourSelect.value = hourStr;
+                        minSelect.value = minStr;
+                    }
                 }
+                
+                // Обновляем timeline после установки времен
             }
             
-            updateTimelineMarkers();
             showNotification('success', 'Расписание успешно авто-распределено');
         }
         
@@ -1517,19 +1728,37 @@
         
         function resetScheduleSettings() {
             document.getElementById('collection-time').value = '08:30';
+            // Update custom time picker
+            const hourSelect = document.getElementById('collection-time-hour');
+            const minSelect = document.getElementById('collection-time-minute');
+            if (hourSelect && minSelect) {
+                hourSelect.value = '08';
+                minSelect.value = '30';
+            }
             document.getElementById('publications-count').value = 7;
             updatePublicationsCount();
             
-            // Set default publication times
-            const defaultTimes = ['09:05', '11:03', '13:07', '15:09', '17:05', '19:02', '21:07'];
+            // Set default publication times (all rounded to 5 minutes)
+            const defaultTimes = ['09:05', '11:05', '13:05', '15:10', '17:05', '19:00', '21:05'];
             for (let i = 1; i <= 7; i++) {
                 const input = document.getElementById(`pub-time-${i}`);
-                if (input) {
-                    input.value = defaultTimes[i-1] || '';
+                if (input && defaultTimes[i-1]) {
+                    input.value = defaultTimes[i-1];
+                    
+                    // Update custom time picker selects
+                    const [hour, minute] = defaultTimes[i-1].split(':');
+                    const hourSelect = document.getElementById(`pub-time-${i}-hour`);
+                    const minSelect = document.getElementById(`pub-time-${i}-minute`);
+                    if (hourSelect && minSelect) {
+                        hourSelect.value = hour;
+                        // Round minutes to nearest 5
+                        const mins = parseInt(minute);
+                        const roundedMins = Math.round(mins / 5) * 5;
+                        minSelect.value = String(roundedMins).padStart(2, '0');
+                    }
                 }
             }
             
-            updateTimelineMarkers();
             showNotification('success', 'Расписание сброшено на стандартное');
         }
         
@@ -1579,5 +1808,6 @@
     
     <!-- Custom Tooltip System -->
     <script src="/static/js/tooltips.js"></script>
+    
 </body>
 </html>
