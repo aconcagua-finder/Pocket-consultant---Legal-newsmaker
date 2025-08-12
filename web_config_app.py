@@ -10,13 +10,16 @@ import os
 import copy
 from pathlib import Path
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_file
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, send_file, session
 from flask_cors import CORS
 from typing import Dict, Any, List, Optional
 from loguru import logger
 import hashlib
 import secrets
 import shutil
+
+# Импортируем модуль аутентификации
+from auth_middleware import requires_auth, requires_admin, sanitize_input
 
 # Импортируем модули проекта
 from timezone_utils import (
@@ -774,6 +777,7 @@ config_manager = ConfigManager()
 
 
 @app.route('/')
+@requires_auth
 def index():
     """Главная страница с формами настроек"""
     validation = config_manager.validate_config()
@@ -795,6 +799,7 @@ def index():
 
 
 @app.route('/api/config', methods=['GET'])
+@requires_auth
 def get_config():
     """API endpoint для получения текущей конфигурации"""
     # Маскируем API ключи для безопасности
@@ -820,6 +825,7 @@ def get_config():
 
 
 @app.route('/api/config', methods=['POST'])
+@requires_admin
 def update_config():
     """API endpoint для обновления конфигурации"""
     try:
@@ -899,6 +905,7 @@ def update_config():
 
 
 @app.route('/api/reset', methods=['POST'])
+@requires_admin
 def reset_config():
     """API endpoint для сброса к дефолтным настройкам"""
     try:
@@ -1040,6 +1047,7 @@ def load_profile():
 
 
 @app.route('/api/profiles/save', methods=['POST'])
+@requires_admin
 def save_profile():
     """Сохранить текущие настройки в профиль"""
     try:
@@ -1087,6 +1095,7 @@ def create_profile():
 
 
 @app.route('/api/profiles/delete', methods=['POST'])
+@requires_admin
 def delete_profile():
     """Удалить профиль"""
     try:

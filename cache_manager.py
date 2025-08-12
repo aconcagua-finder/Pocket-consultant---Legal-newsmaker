@@ -7,7 +7,6 @@
 
 import json
 import hashlib
-import pickle
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Any, Optional, Callable, Dict, Union
@@ -190,13 +189,14 @@ class FileCache:
                 return None
         
         try:
-            # Пробуем загрузить как JSON
-            if cache_path.suffix == '.json' or cache_type == 'api':
-                return safe_json_read(cache_path)
-            else:
-                # Иначе используем pickle
-                with open(cache_path, 'rb') as f:
-                    return pickle.load(f)
+            # Всегда используем JSON для безопасности
+            if cache_path.suffix != '.json':
+                # Проверяем есть ли JSON версия файла
+                json_path = cache_path.with_suffix('.json')
+                if json_path.exists():
+                    cache_path = json_path
+            
+            return safe_json_read(cache_path)
         except Exception as e:
             logger.error(f"Ошибка чтения кеша {cache_path}: {e}")
             return None
@@ -216,15 +216,25 @@ class FileCache:
         cache_path = self._get_cache_path(cache_type, key)
         
         try:
-            # Сохраняем как JSON если возможно
-            if isinstance(value, (dict, list, str, int, float, bool, type(None))):
-                cache_path = cache_path.with_suffix('.json')
-                return safe_json_write(cache_path, value)
-            else:
-                # Иначе используем pickle
-                with open(cache_path, 'wb') as f:
-                    pickle.dump(value, f)
-                return True
+            # Всегда сохраняем как JSON для безопасности
+            cache_path = cache_path.with_suffix('.json')
+            
+            # Преобразуем не-JSON типы в JSON-совместимые
+            json_value = value
+            if not isinstance(value, (dict, list, str, int, float, bool, type(None))):
+                # Пытаемся сериализовать объект
+                try:
+                    json_value = {
+                        '_type': type(value).__name__,
+                        '_module': type(value).__module__,
+                        '_data': str(value)  # Fallback на строковое представление
+                    }
+                    logger.warning(f"Объект типа {type(value).__name__} преобразован в JSON-совместимый формат")
+                except Exception as e:
+                    logger.error(f"Не удалось сериализовать объект: {e}")
+                    return False
+            
+            return safe_json_write(cache_path, json_value)
         except Exception as e:
             logger.error(f"Ошибка записи кеша {cache_path}: {e}")
             return False
