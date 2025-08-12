@@ -38,8 +38,7 @@
 ```
 ├── news_collector.py      # Сбор новостей
 ├── news_publisher.py      # Публикация
-├── news_scheduler.py      # Планировщик
-└── scheduler.py          # Legacy обертка
+└── news_scheduler.py      # Планировщик
 ```
 
 **Ответственность:**
@@ -68,7 +67,8 @@
 ├── validation.py         # Валидация
 ├── timezone_utils.py     # Часовые пояса
 ├── file_utils.py        # Файловые операции
-├── logger_setup.py      # Логирование
+├── error_handler.py     # Обработка ошибок и retry
+├── logger_setup.py      # Унифицированное логирование
 └── config.py           # Конфигурация
 ```
 
@@ -211,11 +211,9 @@ def get_openai_comic_prompt(context, style)
 
 ### 3. Strategy Pattern
 ```python
-# scheduler.py - выбор стратегии
-if use_new_architecture:
-    scheduler = NewsmakerScheduler()
-else:
-    scheduler = LegacyScheduler()
+# main.py - прямое использование планировщика
+from news_scheduler import NewsmakerScheduler as DirectNewsScheduler
+scheduler = DirectNewsScheduler()
 ```
 
 ### 4. Decorator Pattern

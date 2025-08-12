@@ -210,7 +210,6 @@ newsmaker/
 ├── news_collector.py        # Сбор новостей через Perplexity
 ├── news_publisher.py        # Публикация из готовых файлов
 ├── news_scheduler.py        # Планировщик (новая архитектура)
-├── scheduler.py            # Legacy обертка для совместимости
 │
 ├── perplexity_client.py    # API клиент Perplexity
 ├── openai_client.py        # Генерация 4-панельных комиксов
@@ -224,9 +223,19 @@ newsmaker/
 ├── validation.py         # Валидация всех данных
 ├── timezone_utils.py     # Работа с МСК временем
 ├── file_utils.py        # Безопасная работа с файлами
+├── error_handler.py     # Обработка ошибок и retry логика
 │
 ├── run_with_validation.py # Запуск с полной проверкой
-├── logger_setup.py       # Настройка логирования
+├── logger_setup.py       # Унифицированное логирование
+│
+├── tests/               # Тесты проекта
+│   ├── html/           # HTML тестовые файлы
+│   ├── unit/           # Unit тесты
+│   └── integration/    # Интеграционные тесты
+│
+├── docs/               # Документация
+│   ├── archive/        # Архивные документы
+│   └── technical/      # Техническая документация
 │
 └── utils/               # Вспомогательные утилиты
     └── show_full_prompt.py  # Отладка промптов
