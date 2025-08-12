@@ -47,11 +47,49 @@ logs/
 # Credentials - IMPORTANT!
 config.py
 
-# Test files
-test_*.py
-debug_*.py
+# Test files (moved to tests/)
+# test_*.py moved to tests/unit/
+# debug_*.py
 
 # Temporary files
 *.tmp
 *.bak
-*.cache 
+*.cache
+*.temp
+
+# Автогенерируемые файлы конфигурации
+config_updates.py
+config_web.json
+
+# Кеш директории
+cache/api/*
+cache/images/*
+cache/news/*
+!cache/api/.gitkeep
+!cache/images/.gitkeep
+!cache/news/.gitkeep
+
+# Метрики
+metrics/*
+!metrics/.gitkeep
+
+# Временные HTML тесты
+tests/html/*.html
+
+# Профили (кроме дефолтного)
+profiles/*
+!profiles/Pocket Consultant.json
+
+# История сообщений (содержит ID)
+message_history.json
+
+# Временные отчеты (теперь в docs/archive)
+docs/archive/*.md
+
+# OS specific
+Thumbs.db
+desktop.ini
+
+# Локальные настройки разработчика
+.local/
+*.local.* 

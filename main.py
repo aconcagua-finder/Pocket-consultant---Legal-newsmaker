@@ -21,7 +21,7 @@ from news_collector import NewsCollector
 from news_publisher import NewsPublisher
 
 # Импорт планировщиков - используем wrapper для совместимости
-from scheduler import NewsmakerScheduler  # Это wrapper с автовыбором архитектуры
+# scheduler.py удален - используем news_scheduler напрямую
 from news_scheduler import NewsmakerScheduler as DirectNewsScheduler  # Прямой доступ к новому планировщику
 
 import config
@@ -35,7 +35,7 @@ def test_mode():
     """Режим тестирования всех компонентов"""
     logger.info("🧪 Запуск режима тестирования...")
     
-    scheduler = NewsmakerScheduler()
+    scheduler = DirectNewsScheduler()
     
     # Тестируем все компоненты
     success = scheduler.test_components()
@@ -54,7 +54,7 @@ def manual_run():
     """Ручной запуск получения и отправки новостей"""
     logger.info("🚀 Ручной запуск задачи...")
     
-    scheduler = NewsmakerScheduler()
+    scheduler = DirectNewsScheduler()
     scheduler.run_once_now()
     
     logger.info("✅ Ручной запуск завершен")
@@ -64,7 +64,7 @@ def scheduler_mode():
     """Режим планировщика - постоянная работа"""
     logger.info("⏰ Запуск в режиме планировщика...")
     
-    scheduler = NewsmakerScheduler()
+    scheduler = DirectNewsScheduler()
     
     # Сначала тестируем компоненты
     logger.info("🔧 Предварительная проверка компонентов...")

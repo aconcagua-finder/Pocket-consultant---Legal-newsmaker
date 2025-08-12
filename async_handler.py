@@ -14,7 +14,8 @@ from loguru import logger
 import time
 
 import config
-from retry_handler import calculate_backoff_time, is_retryable_error
+# Retry логика теперь в error_handler
+from error_handler import retry_on_error, calculate_backoff_time, is_retryable_error
 from cache_manager import cache_api_response
 
 

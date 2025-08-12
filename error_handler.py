@@ -203,6 +203,60 @@ def safe_execution(
     return decorator
 
 
+def calculate_backoff_time(attempt: int, base_delay: float = 1.0, max_delay: float = 60.0) -> float:
+    """
+    Вычисляет время задержки с экспоненциальным увеличением
+    
+    Args:
+        attempt: Номер попытки
+        base_delay: Базовая задержка
+        max_delay: Максимальная задержка
+    
+    Returns:
+        Время задержки в секундах
+    """
+    delay = min(base_delay * (2 ** attempt), max_delay)
+    return delay
+
+
+def is_retryable_error(exception: Exception) -> bool:
+    """
+    Проверяет, можно ли повторить операцию после этой ошибки
+    
+    Args:
+        exception: Исключение для проверки
+    
+    Returns:
+        True если можно повторить
+    """
+    # Список ошибок, при которых можно повторить
+    retryable_errors = (
+        ConnectionError,
+        TimeoutError,
+        APIException,
+        PerplexityAPIException,
+        OpenAIAPIException,
+        TelegramAPIException,
+    )
+    
+    # Проверяем тип ошибки
+    if isinstance(exception, retryable_errors):
+        return True
+    
+    # Проверяем сообщение об ошибке
+    error_msg = str(exception).lower()
+    retryable_messages = [
+        'timeout', 'timed out',
+        'connection', 'connect',
+        'rate limit', 'too many requests',
+        'temporary', 'temporarily',
+        '500', '502', '503', '504',
+        'retry', 'try again'
+    ]
+    
+    return any(msg in error_msg for msg in retryable_messages)
+
+
 def retry_on_error(
     max_attempts: int = 3,
     exceptions: tuple = (Exception,),

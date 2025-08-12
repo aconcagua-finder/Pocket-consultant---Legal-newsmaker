@@ -25,7 +25,7 @@ from prompts import (
     parse_collected_news,
     PromptConfig
 )
-from retry_handler import retry_with_exponential_backoff, PerplexityRetryHandler
+from error_handler import retry_on_error, PerplexityAPIException
 from cache_manager import cache_news_data, cache_api_response, cache_manager
 from async_handler import batch_generate_images, run_async
 from monitoring import monitor_performance, metrics_collector
@@ -62,7 +62,7 @@ class NewsCollector:
         self.images_dir.mkdir(exist_ok=True)
         
         # Инициализируем retry handler
-        self.perplexity_retry = PerplexityRetryHandler()
+        # Retry логика теперь в декораторе retry_on_error
         
         # Настройки для сбора
         self.max_retries = 3
@@ -227,7 +227,7 @@ class NewsCollector:
             logger.error(f"Ошибка при очистке старых файлов: {e}")
     
     @monitor_performance("news_collection")
-    @retry_with_exponential_backoff(max_attempts=3)
+    @retry_on_error(max_attempts=3, exceptions=(PerplexityAPIException, Exception), delay=1.0, backoff=2.0)
     @cache_api_response(ttl=300)  # Кешируем на 5 минут
     def _collect_raw_news(self) -> Optional[str]:
         """
