@@ -1,0 +1,11 @@
+{
+  "users": {
+    "admin": {
+      "password_hash": "scrypt:32768:8:1$pl8SKCeAIcZELX4U$0e1a0b9e897bd53d5cac82bda0781fc55fbd595054fe1b6bd1d275d316efe6ccc9b52bd9d96e771ded33c066d2f4fb3afb8b15a282e7c3466b2adc488a6f90fe",
+      "created_at": "2025-08-12 09:32:45.914645",
+      "role": "admin"
+    }
+  },
+  "default_password": "yy_SbOx2woUGr6Kx",
+  "warning": "CHANGE THIS PASSWORD IMMEDIATELY!"
+}

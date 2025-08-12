@@ -18,8 +18,9 @@ import hashlib
 import secrets
 import shutil
 
-# Импортируем модуль аутентификации
+# Импортируем модули безопасности
 from auth_middleware import requires_auth, requires_admin, sanitize_input
+from csrf_protection import csrf_protect, get_csrf_token
 
 # Импортируем модули проекта
 from timezone_utils import (
@@ -47,6 +48,124 @@ PROFILES_DIR = Path("profiles")
 
 # Создаем папку для профилей если её нет
 PROFILES_DIR.mkdir(exist_ok=True)
+
+def safe_python_string(value: Any) -> str:
+    """
+    Безопасное экранирование значения для вставки в Python код
+    Защищает от code injection атак
+    
+    Args:
+        value: Значение для экранирования
+        
+    Returns:
+        Безопасно экранированная строка для Python кода
+    """
+    if value is None:
+        return 'None'
+    elif isinstance(value, bool):
+        return 'True' if value else 'False'
+    elif isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, str):
+        # Используем repr() для безопасного экранирования строк
+        # Это автоматически экранирует все специальные символы
+        return repr(value)
+    elif isinstance(value, (list, dict)):
+        # Для списков и словарей используем json.dumps
+        return json.dumps(value)
+    else:
+        # Для всех остальных типов используем repr()
+        return repr(value)
+
+def validate_config_value(key: str, value: Any) -> bool:
+    """
+    Валидация значений конфигурации для предотвращения инъекций
+    
+    Args:
+        key: Ключ конфигурации
+        value: Значение для проверки
+    
+    Returns:
+        True если значение безопасно, False иначе
+    """
+    # Белые списки допустимых значений для критичных параметров
+    ALLOWED_VALUES = {
+        "PERPLEXITY_MODEL": ["sonar", "sonar-pro", "sonar-reasoning", 
+                            "sonar-reasoning-pro", "sonar-deep-research"],
+        "PERPLEXITY_SEARCH_DEPTH": ["low", "medium", "high"],
+        "PERPLEXITY_SEARCH_RECENCY": ["hour", "day", "week", "month"],
+        "OPENAI_IMAGE_MODEL": ["dall-e-2", "dall-e-3", "gpt-image-1"],
+        "OPENAI_IMAGE_QUALITY": ["standard", "hd", "low", "medium", "high"],
+        "OPENAI_IMAGE_STYLE": ["vivid", "natural"],
+        "OPENAI_IMAGE_SIZE": ["256x256", "512x512", "1024x1024", "1024x1792", 
+                              "1792x1024", "1536x1024", "2048x2048", "4096x4096"]
+    }
+    
+    # Проверяем значения против белого списка
+    if key in ALLOWED_VALUES:
+        if value not in ALLOWED_VALUES[key]:
+            logger.warning(f"Недопустимое значение для {key}: {value}")
+            return False
+    
+    # Проверяем числовые ограничения
+    NUMERIC_LIMITS = {
+        "PERPLEXITY_MAX_TOKENS": (1, 16384),
+        "PERPLEXITY_TEMPERATURE": (0.0, 2.0),
+        "PERPLEXITY_TOP_P": (0.0, 1.0),
+        "PUBLICATIONS_PER_DAY": (1, 24),
+        "MAX_NEWS_PER_DAY": (1, 50),
+        "MIN_CONTENT_LENGTH": (10, 10000),
+        "MAX_CONTENT_LENGTH": (10, 10000),
+        "CONTENT_SIMILARITY_THRESHOLD": (0.0, 1.0),
+        "TELEGRAM_MAX_MESSAGE_LENGTH": (1, 4096),
+        "TELEGRAM_MAX_CAPTION_LENGTH": (1, 1024)
+    }
+    
+    if key in NUMERIC_LIMITS:
+        min_val, max_val = NUMERIC_LIMITS[key]
+        if not isinstance(value, (int, float)) or value < min_val or value > max_val:
+            logger.warning(f"Значение {key} вне допустимого диапазона: {value}")
+            return False
+    
+    return True
+
+def validate_profile_name(profile_name: str) -> bool:
+    """
+    Валидация имени профиля для защиты от Path Traversal атак
+    
+    Args:
+        profile_name: Имя профиля для проверки
+        
+    Returns:
+        True если имя безопасно, False если содержит опасные символы
+    """
+    import re
+    
+    # Проверяем на недопустимые символы
+    if not profile_name:
+        return False
+        
+    # Запрещаем path traversal последовательности
+    if '..' in profile_name or '/' in profile_name or '\\' in profile_name:
+        logger.warning(f"Попытка Path Traversal в имени профиля: {profile_name}")
+        return False
+    
+    # Запрещаем специальные системные имена Windows
+    forbidden_names = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 
+                      'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 
+                      'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']
+    if profile_name.upper() in forbidden_names:
+        return False
+    
+    # Разрешаем только безопасные символы: буквы, цифры, пробелы, дефисы, подчеркивания
+    if not re.match(r'^[a-zA-Z0-9а-яА-ЯёЁ\s\-_]+$', profile_name):
+        return False
+    
+    # Ограничение длины имени
+    if len(profile_name) > 100:
+        return False
+        
+    return True
 
 # Дефолтная конфигурация
 DEFAULT_CONFIG = {
@@ -312,6 +431,11 @@ class ConfigManager:
     
     def save_profile(self, profile_name: str) -> bool:
         """Сохраняет текущие настройки в профиль"""
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            logger.error(f"Недопустимое имя профиля: {profile_name}")
+            return False
+            
         try:
             profile_path = PROFILES_DIR / f"{profile_name}.json"
             profile_data = {
@@ -366,6 +490,11 @@ class ConfigManager:
     
     def load_profile(self, profile_name: str) -> bool:
         """Загружает настройки из профиля"""
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            logger.error(f"Недопустимое имя профиля: {profile_name}")
+            return False
+            
         try:
             if profile_name not in self.profiles:
                 logger.error(f"Профиль '{profile_name}' не найден")
@@ -398,6 +527,11 @@ class ConfigManager:
     
     def delete_profile(self, profile_name: str) -> bool:
         """Удаляет профиль"""
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            logger.error(f"Недопустимое имя профиля: {profile_name}")
+            return False
+            
         try:
             if profile_name == "Pocket Consultant":
                 logger.warning("Нельзя удалить дефолтный профиль")
@@ -421,6 +555,15 @@ class ConfigManager:
     
     def duplicate_profile(self, source_name: str, new_name: str) -> bool:
         """Дублирует профиль с новым именем"""
+        # Валидация имен профилей
+        if not validate_profile_name(source_name):
+            logger.error(f"Недопустимое имя исходного профиля: {source_name}")
+            return False
+        
+        if not validate_profile_name(new_name):
+            logger.error(f"Недопустимое имя нового профиля: {new_name}")
+            return False
+            
         try:
             if source_name not in self.profiles:
                 logger.error(f"Исходный профиль '{source_name}' не найден")
@@ -668,44 +811,44 @@ class ConfigManager:
             # API настройки Perplexity
             if "api_models" in self.config and "perplexity" in self.config["api_models"]:
                 perplexity = self.config["api_models"]["perplexity"]
-                config_updates.append(f'PERPLEXITY_MODEL = "{perplexity.get("model", "sonar-deep-research")}"')
-                config_updates.append(f'PERPLEXITY_MAX_TOKENS = {perplexity.get("max_tokens", 8192)}')
-                config_updates.append(f'PERPLEXITY_TEMPERATURE = {perplexity.get("temperature", 0.7)}')
-                config_updates.append(f'PERPLEXITY_TOP_P = {perplexity.get("top_p", 0.9)}')
-                config_updates.append(f'PERPLEXITY_SEARCH_DEPTH = "{perplexity.get("search_depth", "high")}"')
+                config_updates.append(f'PERPLEXITY_MODEL = {safe_python_string(perplexity.get("model", "sonar-deep-research"))}')
+                config_updates.append(f'PERPLEXITY_MAX_TOKENS = {safe_python_string(perplexity.get("max_tokens", 8192))}')
+                config_updates.append(f'PERPLEXITY_TEMPERATURE = {safe_python_string(perplexity.get("temperature", 0.7))}')
+                config_updates.append(f'PERPLEXITY_TOP_P = {safe_python_string(perplexity.get("top_p", 0.9))}')
+                config_updates.append(f'PERPLEXITY_SEARCH_DEPTH = {safe_python_string(perplexity.get("search_depth", "high"))}')
                 if perplexity.get("search_recency_filter"):
-                    config_updates.append(f'PERPLEXITY_SEARCH_RECENCY = "{perplexity["search_recency_filter"]}"')
+                    config_updates.append(f'PERPLEXITY_SEARCH_RECENCY = {safe_python_string(perplexity["search_recency_filter"])}')
             
             # API настройки OpenAI
             if "api_models" in self.config and "openai" in self.config["api_models"]:
                 openai = self.config["api_models"]["openai"]
-                config_updates.append(f'OPENAI_IMAGE_MODEL = "{openai.get("model", "gpt-image-1")}"')
-                config_updates.append(f'OPENAI_IMAGE_QUALITY = "{openai.get("image_quality", "standard")}"')
+                config_updates.append(f'OPENAI_IMAGE_MODEL = {safe_python_string(openai.get("model", "gpt-image-1"))}')
+                config_updates.append(f'OPENAI_IMAGE_QUALITY = {safe_python_string(openai.get("image_quality", "standard"))}')
                 if openai.get("image_style"):  # Не все модели имеют стиль
-                    config_updates.append(f'OPENAI_IMAGE_STYLE = "{openai["image_style"]}"')
-                config_updates.append(f'OPENAI_IMAGE_SIZE = "{openai.get("image_size", "1024x1024")}"')
+                    config_updates.append(f'OPENAI_IMAGE_STYLE = {safe_python_string(openai["image_style"])}')
+                config_updates.append(f'OPENAI_IMAGE_SIZE = {safe_python_string(openai.get("image_size", "1024x1024"))}')
             
             # Расписание
             if "schedule" in self.config:
                 schedule = self.config["schedule"]
-                config_updates.append(f'COLLECTION_TIME = "{schedule.get("collection_time", "08:30")}"')
-                config_updates.append(f'USER_TIMEZONE = "{schedule.get("user_timezone", "Europe/Moscow")}"')
-                config_updates.append(f'PUBLICATIONS_PER_DAY = {schedule.get("publications_per_day", 7)}')
-                config_updates.append(f'PUBLICATION_SCHEDULE = {json.dumps(schedule.get("publication_times", []))}')
+                config_updates.append(f'COLLECTION_TIME = {safe_python_string(schedule.get("collection_time", "08:30"))}')
+                config_updates.append(f'USER_TIMEZONE = {safe_python_string(schedule.get("user_timezone", "Europe/Moscow"))}')
+                config_updates.append(f'PUBLICATIONS_PER_DAY = {safe_python_string(schedule.get("publications_per_day", 7))}')
+                config_updates.append(f'PUBLICATION_SCHEDULE = {safe_python_string(schedule.get("publication_times", []))}')
             
             # Лимиты контента
             if "content" in self.config:
                 content = self.config["content"]
-                config_updates.append(f'MAX_NEWS_PER_DAY = {content.get("max_news_per_day", 7)}')
-                config_updates.append(f'MIN_CONTENT_LENGTH = {content.get("min_content_length", 50)}')
-                config_updates.append(f'MAX_CONTENT_LENGTH = {content.get("max_content_length", 1500)}')
-                config_updates.append(f'CONTENT_SIMILARITY_THRESHOLD = {content.get("similarity_threshold", 0.7)}')
+                config_updates.append(f'MAX_NEWS_PER_DAY = {safe_python_string(content.get("max_news_per_day", 7))}')
+                config_updates.append(f'MIN_CONTENT_LENGTH = {safe_python_string(content.get("min_content_length", 50))}')
+                config_updates.append(f'MAX_CONTENT_LENGTH = {safe_python_string(content.get("max_content_length", 1500))}')
+                config_updates.append(f'CONTENT_SIMILARITY_THRESHOLD = {safe_python_string(content.get("similarity_threshold", 0.7))}')
             
             # Telegram настройки
             if "telegram" in self.config:
                 telegram = self.config["telegram"]
-                config_updates.append(f'TELEGRAM_MAX_MESSAGE_LENGTH = {telegram.get("max_message_length", 4096)}')
-                config_updates.append(f'TELEGRAM_MAX_CAPTION_LENGTH = {telegram.get("max_caption_length", 1024)}')
+                config_updates.append(f'TELEGRAM_MAX_MESSAGE_LENGTH = {safe_python_string(telegram.get("max_message_length", 4096))}')
+                config_updates.append(f'TELEGRAM_MAX_CAPTION_LENGTH = {safe_python_string(telegram.get("max_caption_length", 1024))}')
             
             # Записываем обновления в файл
             updates_file = Path("config_updates.py")
@@ -824,8 +967,17 @@ def get_config():
     })
 
 
+@app.route('/api/csrf-token', methods=['GET'])
+@requires_auth
+def get_csrf_token_endpoint():
+    """Получить CSRF токен для защищенных запросов"""
+    token = get_csrf_token()
+    return jsonify({"csrf_token": token})
+
+
 @app.route('/api/config', methods=['POST'])
 @requires_admin
+@csrf_protect
 def update_config():
     """API endpoint для обновления конфигурации"""
     try:
@@ -906,6 +1058,7 @@ def update_config():
 
 @app.route('/api/reset', methods=['POST'])
 @requires_admin
+@csrf_protect
 def reset_config():
     """API endpoint для сброса к дефолтным настройкам"""
     try:
@@ -941,6 +1094,7 @@ def get_history():
 
 
 @app.route('/api/restore', methods=['POST'])
+@csrf_protect
 def restore_from_history():
     """API endpoint для восстановления из истории"""
     try:
@@ -977,6 +1131,7 @@ def export_config():
 
 
 @app.route('/api/import', methods=['POST'])
+@csrf_protect
 def import_config():
     """Импорт конфигурации из JSON"""
     try:
@@ -1023,12 +1178,17 @@ def get_profiles():
 
 
 @app.route('/api/profiles/load', methods=['POST'])
+@csrf_protect
 def load_profile():
     """Загрузить профиль"""
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
             return jsonify({"success": False, "message": "Не указано имя профиля"}), 400
+        
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            return jsonify({"success": False, "message": "Недопустимое имя профиля"}), 400
         
         if config_manager.load_profile(profile_name):
             return jsonify({
@@ -1048,10 +1208,15 @@ def load_profile():
 
 @app.route('/api/profiles/save', methods=['POST'])
 @requires_admin
+@csrf_protect
 def save_profile():
     """Сохранить текущие настройки в профиль"""
     try:
         profile_name = request.json.get('profile_name', config_manager.current_profile)
+        
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            return jsonify({"success": False, "message": "Недопустимое имя профиля"}), 400
         
         if config_manager.save_profile(profile_name):
             return jsonify({
@@ -1068,12 +1233,17 @@ def save_profile():
 
 
 @app.route('/api/profiles/create', methods=['POST'])
+@csrf_protect
 def create_profile():
     """Создать новый профиль"""
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
             return jsonify({"success": False, "message": "Не указано имя профиля"}), 400
+        
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            return jsonify({"success": False, "message": "Недопустимое имя профиля"}), 400
         
         if profile_name in config_manager.profiles:
             return jsonify({"success": False, "message": "Профиль с таким именем уже существует"}), 400
@@ -1096,12 +1266,17 @@ def create_profile():
 
 @app.route('/api/profiles/delete', methods=['POST'])
 @requires_admin
+@csrf_protect
 def delete_profile():
     """Удалить профиль"""
     try:
         profile_name = request.json.get('profile_name')
         if not profile_name:
             return jsonify({"success": False, "message": "Не указано имя профиля"}), 400
+        
+        # Валидация имени профиля
+        if not validate_profile_name(profile_name):
+            return jsonify({"success": False, "message": "Недопустимое имя профиля"}), 400
         
         if config_manager.delete_profile(profile_name):
             return jsonify({
@@ -1118,6 +1293,7 @@ def delete_profile():
 
 
 @app.route('/api/profiles/duplicate', methods=['POST'])
+@csrf_protect
 def duplicate_profile():
     """Дублировать профиль"""
     try:
@@ -1126,6 +1302,13 @@ def duplicate_profile():
         
         if not source_name or not new_name:
             return jsonify({"success": False, "message": "Не указаны имена профилей"}), 400
+        
+        # Валидация имен профилей
+        if not validate_profile_name(source_name):
+            return jsonify({"success": False, "message": "Недопустимое имя исходного профиля"}), 400
+        
+        if not validate_profile_name(new_name):
+            return jsonify({"success": False, "message": "Недопустимое имя нового профиля"}), 400
         
         if config_manager.duplicate_profile(source_name, new_name):
             return jsonify({
@@ -1164,6 +1347,7 @@ def get_timezones():
 
 
 @app.route('/api/schedule/preview', methods=['POST'])
+@csrf_protect
 def preview_schedule():
     """API endpoint для предпросмотра расписания в разных часовых поясах"""
     try:
@@ -1184,6 +1368,7 @@ def preview_schedule():
 
 
 @app.route('/api/schedule/auto-distribute', methods=['POST'])
+@csrf_protect
 def auto_distribute_schedule():
     """API endpoint для автоматического распределения времён публикации"""
     try:
@@ -1221,6 +1406,7 @@ def auto_distribute_schedule():
 
 
 @app.route('/api/schedule/convert', methods=['POST'])
+@csrf_protect
 def convert_schedule_timezone():
     """API endpoint для конвертации расписания между часовыми поясами"""
     try:
